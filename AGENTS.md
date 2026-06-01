@@ -19,6 +19,7 @@ This project uses Gleam and Lustre to build a high-quality web component for tra
 7. **Storage (Sans-IO):** Implement storage logic using a standardized API following the sans-io pattern, allowing for swappable backends (Local Storage, SQLite, etc.).
 8. **FFI:** Ensure Gleam/JS FFI is kept lean and is used as a last resort.
 9. **Documentation:** Ensure each module and function accurately and succinctly describe the ideas and functionality in the correct Gleam format.
+10. When completing a feature or task refer back to `ROADMAP.md` and check off the item if it appears and has been confirmed to be complete.
 
 <testing>
  - Follow the hybrid testing strategy (Unit + Snapshot) documented in `docs/TESTING.md`. This includes the AI + Snapshot Workflow for managing `birdie` snapshots and ensuring determinism.

@@ -1,0 +1,8 @@
+---
+version: 2.0.0
+title: Owed payments filtering
+file: ./test/snapshots_test.gleam
+test_name: payment_filtering_snapshot_test
+---
+Payment(id: "uuid-internet", name: "Internet", description: None, amount: 80.0, owed: True, shared: False, payment_date: 2024-06-01)
+Payment(id: "uuid-rent", name: "Rent", description: None, amount: 1200.0, owed: True, shared: True, payment_date: 2024-07-01)

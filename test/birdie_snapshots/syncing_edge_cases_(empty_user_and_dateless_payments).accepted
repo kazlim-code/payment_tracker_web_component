@@ -1,0 +1,9 @@
+---
+version: 2.0.0
+title: Syncing edge cases (empty user and dateless payments)
+file: ./test/snapshots_test.gleam
+test_name: sync_edge_cases_snapshot_test
+---
+User(created: 2024-01-01T12:00:00.000000Z), first_name: "Callum", last_name: "Tester", payments: [], monthly_payments: [], username: "kazlim")
+---
+User(created: 2024-01-01T12:00:00.000000Z), first_name: "Callum", last_name: "Tester", payments: [Payment(id: "no-date", name: "Ghost Payment", description: None, amount: 50.0, owed: True, shared: False, payment_date: None)], monthly_payments: [], username: "kazlim")

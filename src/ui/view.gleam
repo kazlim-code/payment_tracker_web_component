@@ -487,25 +487,9 @@ fn detailed_month_heading(
 fn detail_month_owed(
   using monthly_payment: MonthlyPayment,
 ) -> Result(Element(state.Msg), String) {
-  use total <- result.try(
-    monthly_payment
-    |> monthly_payment.get_total
-    |> option.to_result("Total calculation error"),
-  )
-  use home_loan_amount <- result.try(
-    monthly_payment
-    |> monthly_payment.get_home_loan_amount
-    |> option.to_result("Home loan amount error"),
-  )
-  use transfer_amount <- result.try(
-    monthly_payment
-    |> monthly_payment.get_home_loan_transfer
-    |> option.to_result("Transfer amount error"),
-  )
+  let owed_amount = monthly_payment.calculate_owed(monthly_payment)
   let paid =
     monthly_payment |> monthly_payment.get_paid_timestamp |> option.is_some
-
-  let owed_amount = home_loan_amount /. 2.0 +. total -. transfer_amount
 
   Ok(
     html.div([attribute.class("detailed-month--owed")], [
@@ -1245,6 +1229,9 @@ fn header_view(model: Model) -> Element(state.Msg) {
 
 /// Renders the sticky footer containing keyboard shortcut hints and
 /// version information.
+///
+/// NOTE: Keyboard navigation logic and associated tests are currently
+/// incomplete and not yet implemented.
 ///
 fn footer_view(_model: Model) -> Element(msg) {
   html.footer([attribute.class("vim-footer")], [

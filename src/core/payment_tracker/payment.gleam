@@ -365,7 +365,7 @@ pub fn to_string(payment: Payment) {
     Payment(id, amount, name, description, owed, shared, payment_date) ->
       "Payment(id: \""
       <> id
-      <> "\", name: "
+      <> "\", name: \""
       <> name
       <> "\", description: "
       <> case description {
@@ -399,7 +399,7 @@ pub fn to_string(payment: Payment) {
     ) ->
       "Payment(id: \""
       <> id
-      <> "\", name: "
+      <> "\", name: \""
       <> name
       <> "\", description: "
       <> case description {
@@ -435,7 +435,7 @@ pub fn to_string(payment: Payment) {
     ) ->
       "Payment(id: \""
       <> id
-      <> "\", name: "
+      <> "\", name: \""
       <> name
       <> "\", description: "
       <> case description {

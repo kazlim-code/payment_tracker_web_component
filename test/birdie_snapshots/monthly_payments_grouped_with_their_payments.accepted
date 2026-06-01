@@ -1,0 +1,11 @@
+---
+version: 2.0.0
+title: Monthly payments grouped with their payments
+file: ./test/snapshots_test.gleam
+test_name: monthly_grouping_snapshot_test
+---
+[MonthlyPayment(month_year: MonthYear(June 2024), home_loan_payment: None, home_loan_transfer: None, paid: None, total: 155.0)]
+Payments: Payment(id: "uuid-internet", name: "Internet", description: None, amount: 80.0, owed: True, shared: False, payment_date: 2024-06-01), Payment(id: "uuid-groceries", name: "Groceries", description: "Weekly shop", amount: 150.0, owed: False, shared: True, payment_date: 2024-06-15)
+---
+[MonthlyPayment(month_year: MonthYear(July 2024), home_loan_payment: None, home_loan_transfer: None, paid: None, total: 600.0)]
+Payments: Payment(id: "uuid-rent", name: "Rent", description: None, amount: 1200.0, owed: True, shared: True, payment_date: 2024-07-01)

@@ -124,12 +124,24 @@ pub fn get_home_loan_transfer(
   monthly_payment.home_loan_transfer
 }
 
+/// Calculates the amount owed for the month, taking into account the total of 
+/// all payments, the home loan amount (split in half) and the automated bank 
+/// transfer amount.
+///
+pub fn calculate_owed(monthly_payment: MonthlyPayment) -> Float {
+  let total = monthly_payment.total |> option.unwrap(0.0)
+  let home_loan_amount = monthly_payment.home_loan_payment |> option.unwrap(0.0)
+  let transfer_amount = monthly_payment.home_loan_transfer |> option.unwrap(0.0)
+
+  home_loan_amount /. 2.0 +. total -. transfer_amount
+}
+
 /// Attempts to parse a string using tempo.parse_any and return the resulting
 /// MonthYear.
 ///
 pub fn parse_month_year(from string: String) -> Result(MonthYear, String) {
   let assert Ok(year_month_regex) =
-    regexp.from_string("^[1-9]\\d*-((?:0[1-9])|(?:1[0-2]))")
+    regexp.from_string("^[1-9]\\d*-((?:0?[1-9])|(?:1[0-2]))$")
   let parse_string = case regexp.check(year_month_regex, string) {
     True -> string <> "-01"
     // Add a default day value to create a full date

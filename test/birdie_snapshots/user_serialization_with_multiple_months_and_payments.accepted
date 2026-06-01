@@ -1,0 +1,7 @@
+---
+version: 2.0.0
+title: User serialization with multiple months and payments
+file: ./test/snapshots_test.gleam
+test_name: user_serialization_snapshot_test
+---
+{"created":"2024-01-01T12:00:00.000000Z","first_name":"Callum","last_name":"Tester","payments":[{"id":"uuid-internet","amount":80,"name":"Internet","description":null,"owed":true,"shared":false,"payment_date":"2024-06-01"},{"id":"uuid-groceries","amount":150,"name":"Groceries","description":"Weekly shop","owed":false,"shared":true,"payment_date":"2024-06-15"},{"id":"uuid-rent","amount":1200,"name":"Rent","description":null,"owed":true,"shared":true,"payment_date":"2024-07-01"}],"monthly_payments":[{"month_year":"2024-06","home_loan_transfer":null,"home_loan_payment":null,"paid":null,"total":155},{"month_year":"2024-07","home_loan_transfer":null,"home_loan_payment":null,"paid":null,"total":600}],"username":"kazlim"}

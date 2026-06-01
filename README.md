@@ -39,6 +39,28 @@ To verify the final bundle behavior in a non-Gleam environment:
     cd demo && pnpm dev
     ```
 
+## Testing
+
+This project uses a hybrid testing strategy: **Unit Tests** for logic and **Snapshot Tests** for structural output.
+
+### Running Unit Tests
+Unit tests verify calculations, state transitions, and edge cases. Run them with:
+```sh
+gleam test
+```
+
+### Reviewing Snapshot Tests (Birdie)
+We use [Birdie](https://github.com/lpil/birdie) for snapshot testing. This requires a "Human-in-the-Loop" workflow:
+
+1.  **Run Tests:** `gleam test` will fail if a snapshot is new or has changed.
+2.  **Review:** Examine the diff presented in the terminal.
+3.  **Accept/Reject:** If the changes are intentional and correct, run the review tool to accept them:
+    ```sh
+    gleam run -m birdie
+    ```
+
+For a detailed breakdown of our testing philosophy and naming conventions, see [docs/TESTING.md](docs/TESTING.md).
+
 ## Building for Production
 
 To generate the self-contained JavaScript bundle:

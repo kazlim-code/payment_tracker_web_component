@@ -27,6 +27,7 @@ gleam_json = ">= 3.1.0 and < 4.0.0"
 [dev_dependencies]
 gleeunit = ">= 1.9.0 and < 2.0.0"
 lustre_dev_tools = ">= 2.3.6 and < 3.0.0"
+birdie = ">= 2.0.0 and < 3.0.0"
 
 [tools.lustre.html]
 stylesheets = [

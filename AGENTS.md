@@ -10,16 +10,18 @@ This project uses Gleam and Lustre to build a high-quality web component for tra
 - **Styling:** Vanilla CSS with modern features (dialogs, container queries, view transitions).
 
 ## Key Constraints
-1. **No External CSS Frameworks:** Use Vanilla CSS with modern primitives.
-2. **Pure Core:** Keep `src/core` free of UI concerns (no Lustre imports there).
-3. **Stitch-Friendly:** When implementing features, follow the "Gemini Stitch" pattern—implement one logical slice at a time (Core -> UI -> Styles).
-4. **Custom Element Wrapper:** Always ensure the component can be used via standard HTML attributes.
-5. **Keyboard & VIM Awareness:** Always consider how a view would display VIM-like hints. UI components should have a "focused" state even if not using a mouse.
-6. **Form Persistence:** The "Add Payment" form should NOT reset after submission to allow for rapid, repetitive entries.
-7. **Storage (Sans-IO):** Implement storage logic using a standardized API following the sans-io pattern, allowing for swappable backends (Local Storage, SQLite, etc.).
-8. **FFI:** Ensure Gleam/JS FFI is kept lean and is used as a last resort.
-9. **Documentation:** Ensure each module and function accurately and succinctly describe the ideas and functionality in the correct Gleam format.
-10. When completing a feature or task refer back to `ROADMAP.md` and check off the item if it appears and has been confirmed to be complete.
+1. **Agent Skills & Planning:** Always follow the Agent Skills lifecycle. Never jump straight into writing code. You MUST engage in planning (e.g., `spec-driven-development`, `planning-and-task-breakdown`) before implementation.
+2. **Test-Driven Development (TDD):** Tests MUST ALWAYS be written before implementing the corresponding code. Follow the `test-driven-development` skill strictly.
+3. **No External CSS Frameworks:** Use Vanilla CSS with modern primitives.
+4. **Pure Core:** Keep `src/core` free of UI concerns (no Lustre imports there).
+5. **Stitch-Friendly:** When implementing features, follow the "Gemini Stitch" pattern—implement one logical slice at a time (Core -> UI -> Styles).
+6. **Custom Element Wrapper:** Always ensure the component can be used via standard HTML attributes.
+7. **Keyboard & VIM Awareness:** Always consider how a view would display VIM-like hints. UI components should have a "focused" state even if not using a mouse.
+8. **Form Persistence:** The "Add Payment" form should NOT reset after submission to allow for rapid, repetitive entries.
+9. **Storage (Sans-IO):** Implement storage logic using a standardized API following the sans-io pattern, allowing for swappable backends (Local Storage, SQLite, etc.).
+10. **FFI:** Ensure Gleam/JS FFI is kept lean and is used as a last resort.
+11. **Documentation:** Ensure each module and function accurately and succinctly describe the ideas and functionality in the correct Gleam format.
+12. When completing a feature or task refer back to `ROADMAP.md` and check off the item if it appears and has been confirmed to be complete.
 
 ## Testing
  - Follow the hybrid testing strategy (Unit + Snapshot) documented in `docs/TESTING.md`. This includes the AI + Snapshot Workflow for managing `birdie` snapshots and ensuring determinism.
@@ -30,14 +32,24 @@ This project uses Gleam and Lustre to build a high-quality web component for tra
 - **Verification:** Always run `gleam test` to verify logic and structural snapshots before completion.
 
 ## Git Workflow & Commits
+Follow the `git-workflow-and-versioning` skill for all git operations.
+
 ### Atomic Commits
 - Make small, focused, and stable changes.
 - Each commit should represent one logical change (e.g., a single bug fix, a new feature, or a refactor).
 - Never commit work that breaks the build or fails tests.
+- Separate refactors from features/fixes.
 
 ### Conventional Commits
 - Use the Conventional Commits specification: `<type>[optional scope]: <description>`.
-- Common types: `feat`, `fix`, `refactor`, `docs`, `style`, `test`, `chore`.
+- Types:
+  - `feat`: New feature
+  - `fix`: Bug fix
+  - `refactor`: Code change that neither fixes a bug nor adds a feature
+  - `test`: Adding or updating tests
+  - `docs`: Documentation only
+  - `chore`: Tooling, dependencies, config
+  - `style`: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
 - Use the **imperative mood** (e.g., "Add feature" instead of "Added feature").
 
 ### AI Attribution

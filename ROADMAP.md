@@ -33,6 +33,6 @@ This document tracks the current status of features, planned improvements, and t
 - [ ] Add tests for core financial calculations and state transitions.
 
 ## 🛠 Technical Debt & Internal
-- [ ] Update core payment and UI `.gleam` files with documentation for the modules and functions.
+- [x] Update core payment and UI `.gleam` files with documentation for the modules and functions.
 - [ ] Modularize UI components (UI functions in Gleam) for better maintainability.
 - [ ] Refine Gleam/JS FFI where necessary for browser-specific APIs (View Transitions, Local Storage).

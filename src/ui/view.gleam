@@ -886,7 +886,7 @@ pub fn payment_table_overflow_menu(payment: Payment) -> Element(state.Msg) {
   ])
 }
 
-/// Dialog element that takes another element as its body.
+/// Renders a dialog element with the provided options.
 ///
 fn dialog(options: Dialog) -> Element(state.Msg) {
   case options {
@@ -901,7 +901,7 @@ fn dialog(options: Dialog) -> Element(state.Msg) {
   }
 }
 
-/// Element representing consistent container stylings for a dialog header.
+/// Renders a standard header for dialogs.
 ///
 fn dialog_header(
   attributes: List(Attribute(state.Msg)),
@@ -913,7 +913,7 @@ fn dialog_header(
   )
 }
 
-/// Element representing consistent container stylings for a dialog body.
+/// Renders a standard body for dialogs.
 ///
 fn dialog_body(
   attributes: List(Attribute(state.Msg)),
@@ -922,7 +922,7 @@ fn dialog_body(
   html.div(attributes |> list.prepend(attribute.class("dialog-body")), children)
 }
 
-/// Element representing consistent container stylings for a dialog footer actions.
+/// Renders a standard action footer for dialogs.
 ///
 fn dialog_actions(
   attributes: List(Attribute(state.Msg)),
@@ -934,7 +934,7 @@ fn dialog_actions(
   )
 }
 
-/// Button element with stylings representing a close button for a dialog.
+/// Renders a close button for dialogs.
 ///
 fn dialog_close_button() -> Element(state.Msg) {
   html.button(
@@ -1250,6 +1250,8 @@ fn footer_view(_model: Model) -> Element(msg) {
   ])
 }
 
+/// Renders a back button that emits the provided message.
+///
 fn back_button(message: state.Msg) -> Element(state.Msg) {
   html.button(
     [
@@ -1263,6 +1265,8 @@ fn back_button(message: state.Msg) -> Element(state.Msg) {
   )
 }
 
+/// Renders a button to add a new payment.
+///
 fn add_payment_button(message: state.Msg) -> Element(state.Msg) {
   html.button(
     [

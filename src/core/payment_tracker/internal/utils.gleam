@@ -1,3 +1,8 @@
+//// Utility functions for the payment tracker core.
+////
+
+/// Generates a unique identifier.
+///
 pub fn generate_uuid() {
   do_uuid()
 }

@@ -20,6 +20,8 @@ import tempo/datetime
 
 // IMPORTS ---------------------------------------------------------------------
 
+/// Monthly payment details representing a specific month and year.
+///
 pub opaque type MonthlyPayment {
   MonthlyPayment(
     month_year: MonthYear,
@@ -94,30 +96,42 @@ pub fn with_total(
   MonthlyPayment(..monthly_payment, total:)
 }
 
+/// Gets the month and year for the monthly payment.
+///
 pub fn get_month_year(from monthly_payment: MonthlyPayment) -> MonthYear {
   monthly_payment.month_year
 }
 
+/// Gets the total amount of all payments for the month.
+///
 pub fn get_total(from monthly_payment: MonthlyPayment) -> Option(Float) {
   monthly_payment.total
 }
 
+/// Gets the timestamp of when the monthly payment was paid.
+///
 pub fn get_paid_timestamp(
   from monthly_payment: MonthlyPayment,
 ) -> Option(Timestamp) {
   monthly_payment.paid
 }
 
+/// Gets the year for the monthly payment.
+///
 pub fn get_year(from monthly_payment: MonthlyPayment) -> Int {
   monthly_payment.month_year.year
 }
 
+/// Gets the home loan payment amount for the month.
+///
 pub fn get_home_loan_amount(
   from monthly_payment: MonthlyPayment,
 ) -> Option(Float) {
   monthly_payment.home_loan_payment
 }
 
+/// Gets the home loan transfer amount for the month.
+///
 pub fn get_home_loan_transfer(
   from monthly_payment: MonthlyPayment,
 ) -> Option(Float) {
@@ -203,6 +217,8 @@ pub fn month_year_to_string(month_year: MonthYear) -> String {
   |> string.join("-")
 }
 
+/// Converts the month of a monthly payment to its string representation.
+///
 pub fn month_string_from_monthly_payment(
   monthly_payment: MonthlyPayment,
 ) -> String {

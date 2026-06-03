@@ -1,6 +1,11 @@
+//// This module defines the base CSS styles for the payment tracker component.
+////
+
 import lustre/element.{type Element}
 import lustre/element/html
 
+/// Returns a style element containing the base CSS for the application.
+///
 pub fn base() -> Element(msg) {
   html.style(
     [],

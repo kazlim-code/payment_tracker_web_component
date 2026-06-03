@@ -1,3 +1,6 @@
+//// Sort types and utilities for ordering payments.
+////
+
 // TYPES -----------------------------------------------------------------------
 
 /// The valid fields payments can be sorted by.

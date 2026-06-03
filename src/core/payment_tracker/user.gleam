@@ -21,6 +21,8 @@ import tempo/datetime
 import tempo/instant
 import tempo/period
 
+/// A person that can hold, owe or be owed payments.
+///
 pub type User {
   User(
     created: Timestamp,
@@ -76,10 +78,14 @@ pub fn with_last_name(user: User, last_name: String) -> User {
   User(..user, last_name: Some(last_name))
 }
 
+/// Updates the users payments as a builder pattern.
+///
 pub fn with_payments(user: User, payments: List(Payment)) -> User {
   User(..user, payments:)
 }
 
+/// Updates the users monthly payments as a builder pattern.
+///
 pub fn with_monthly_payments(
   user: User,
   monthly_payments: List(MonthlyPayment),
@@ -139,12 +145,14 @@ pub fn get_payments_for_month(
   }
 }
 
+/// Gets all of the users monthly payments.
+///
 pub fn get_monthly_payments(from user: User) {
   user.monthly_payments
 }
 
-// Get a users individual monthly payment if it exists.
-//
+/// Get a users individual monthly payment if it exists.
+///
 pub fn get_monthly_payment(
   from user: User,
   for month_year: MonthYear,
@@ -235,6 +243,9 @@ pub fn sync_monthly_payments(user user: User) -> User {
   )
 }
 
+/// Updates all the users monthly payment totals by calculating the sum of 
+/// payments for each month.
+///
 pub fn sync_month_payment_totals(user user: User) -> User {
   let monthly_payments_with_totals =
     list.map(user.monthly_payments, fn(mp) {

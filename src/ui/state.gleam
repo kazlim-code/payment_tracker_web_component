@@ -1,3 +1,6 @@
+//// This module defines the state and message types for the Lustre application.
+////
+
 import core/payment_tracker/monthly_payment.{type MonthlyPayment}
 import core/payment_tracker/payment.{type Payment}
 import core/payment_tracker/user.{type User}
@@ -9,17 +12,23 @@ import tempo.{type Date, type MonthYear}
 import tempo/date as tempo_date
 import tempo/instant
 
+/// Initialisation options for the application.
+///
 pub type Init {
   Default
   ToMonthlyDetail
 }
 
+/// The different views available in the application.
+///
 pub type View {
   MonthlySummary
   MonthlyDetail(MonthlyPayment)
   AddPayment
 }
 
+/// Data captured by the payment entry form.
+///
 pub type PaymentData {
   PaymentData(
     name: String,
@@ -30,11 +39,15 @@ pub type PaymentData {
   )
 }
 
+/// The different types of monthly balances that can be edited.
+///
 pub type MonthlyBalance {
   HomeLoan
   AutomatedBankTransfer
 }
 
+/// Represents the state of a dialog in the UI.
+///
 pub type Dialog {
   NoDialog
   Dialog(
@@ -43,6 +56,8 @@ pub type Dialog {
   )
 }
 
+/// The application's state model.
+///
 pub type Model {
   Model(
     // View
@@ -63,6 +78,8 @@ pub type Model {
   )
 }
 
+/// Messages that can be sent to the update function to change the state.
+///
 pub type Msg {
   UserBlurredAmount(String)
   UserChangedPaymentDate(String)
@@ -92,6 +109,8 @@ pub type Msg {
   UserToggledToday
 }
 
+/// Initialises the application state.
+///
 pub fn init() -> Model {
   let user = init_default_user()
   Model(
@@ -130,6 +149,8 @@ fn init_default_user() -> User {
   user.new("Callum", "Kazlim")
 }
 
+/// Parses a date string into a Date object for use in forms.
+///
 pub fn parse_date() -> form.Parser(Date) {
   let fallback_error = fn(optional_message: Option(String)) {
     let error_message = case optional_message {
@@ -155,6 +176,8 @@ pub fn parse_date() -> form.Parser(Date) {
   })
 }
 
+/// Adds a view to the back stack if it's not already at the top.
+///
 pub fn add_view_to_back_stack(
   add view: View,
   stack back: List(View),
@@ -168,6 +191,8 @@ pub fn add_view_to_back_stack(
 
 // --- DEBUG/DEVELOPMENT ---
 
+/// Initialises the application with example payment data for development.
+///
 pub fn init_with_example_payments() -> Model {
   let payments = [
     payment.new(name: "Test payment 1")

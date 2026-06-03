@@ -5,6 +5,7 @@
 import core/payment_tracker/monthly_payment.{type MonthlyPayment}
 import core/payment_tracker/payment.{type Payment}
 import core/payment_tracker/user
+import core/version
 import gleam/dynamic/decode
 import gleam/float
 import gleam/int
@@ -1244,7 +1245,7 @@ fn footer_view(_model: Model) -> Element(msg) {
         hint("[esc]", "Summary"),
       ]),
       html.div([attribute.class("text-label-caps opacity-50")], [
-        html.text("v1.0.2"),
+        html.text("v" <> version.string),
       ]),
     ]),
   ])

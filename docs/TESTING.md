@@ -16,6 +16,7 @@ Unit testing is the primary tool for verifying business logic. It forces the dev
 We use Gleam's built-in **`assert`** and **`let assert`** keywords. The `gleeunit/should` module is deprecated.
 
 *   **Logic & Equality:** Use `assert expression == expected`. This provides superior failure reporting, showing exact values and code context.
+*   **Empty Lists:** Use `assert list_val == []` instead of `list.length(list_val) == 0`. Gleam warns against the latter as it is inefficient.
 *   **Custom Messages:** Use `as` for clarity: `assert condition as "Context description"`.
 *   **Pattern Matching:** Use `let assert Ok(val) = result` to unwrap and assert structure.
 

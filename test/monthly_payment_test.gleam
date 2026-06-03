@@ -22,23 +22,26 @@ pub fn parse_month_year_invalid_format_test() {
 
 pub fn month_year_to_string_test() {
   assert monthly_payment.month_year_to_string(tempo.MonthYear(
-    month: calendar.June,
-    year: 2024,
-  )) == "2024-06"
+      month: calendar.June,
+      year: 2024,
+    ))
+    == "2024-06"
 }
 
 pub fn month_year_to_string_double_digit_month_test() {
   assert monthly_payment.month_year_to_string(tempo.MonthYear(
-    month: calendar.October,
-    year: 2024,
-  )) == "2024-10"
+      month: calendar.October,
+      year: 2024,
+    ))
+    == "2024-10"
 }
 
 pub fn month_year_to_string_single_digit_month_test() {
   assert monthly_payment.month_year_to_string(tempo.MonthYear(
-    month: calendar.January,
-    year: 2024,
-  )) == "2024-01"
+      month: calendar.January,
+      year: 2024,
+    ))
+    == "2024-01"
 }
 
 pub fn calculate_owed_test() {
@@ -46,11 +49,12 @@ pub fn calculate_owed_test() {
 
   // Full case: (2000 / 2) + 100 - 500 = 600
   assert monthly_payment.calculate_owed(
-    mp
-    |> monthly_payment.with_home_loan_payment(Some(2000.0))
-    |> monthly_payment.with_home_loan_transfer(Some(500.0))
-    |> monthly_payment.with_total(Some(100.0)),
-  ) == 600.0
+      mp
+      |> monthly_payment.with_home_loan_payment(Some(2000.0))
+      |> monthly_payment.with_home_loan_transfer(Some(500.0))
+      |> monthly_payment.with_total(Some(100.0)),
+    )
+    == 600.0
 }
 
 pub fn calculate_owed_no_values_test() {
@@ -61,6 +65,7 @@ pub fn calculate_owed_no_values_test() {
 pub fn calculate_owed_negative_total_test() {
   let assert Ok(mp) = monthly_payment.new("2024-06")
   assert monthly_payment.calculate_owed(
-    mp |> monthly_payment.with_total(Some(-50.0)),
-  ) == -50.0
+      mp |> monthly_payment.with_total(Some(-50.0)),
+    )
+    == -50.0
 }

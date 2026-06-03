@@ -8,13 +8,13 @@ import payment_tracker_web_component
 import tempo/date as tempo_date
 import tempo/instant
 import ui/state.{
-  AddPayment, Dialog, MonthlyDetail, MonthlySummary, NoDialog,
-  UserBlurredAmount, UserChangedPaymentDate, UserClickedAddMonthPayment,
-  UserClickedBack, UserClickedDetailedMonthView, UserClickedEditPayment,
-  UserClickedMonthlyView, UserClosedDialog, UserDecrementedAmount,
-  UserDeletedPayment, UserIncrementedAmount, UserInputPaymentName,
-  UserSubmittedPayment, UserToggledMonthlyPaymentPaid, UserToggledShared,
-  UserToggledSharedPayment, UserToggledToday,
+  AddPayment, Dialog, MonthlyDetail, MonthlySummary, NoDialog, UserBlurredAmount,
+  UserChangedPaymentDate, UserClickedAddMonthPayment, UserClickedBack,
+  UserClickedDetailedMonthView, UserClickedEditPayment, UserClickedMonthlyView,
+  UserClosedDialog, UserDecrementedAmount, UserDeletedPayment,
+  UserIncrementedAmount, UserInputPaymentName, UserSubmittedPayment,
+  UserToggledMonthlyPaymentPaid, UserToggledShared, UserToggledSharedPayment,
+  UserToggledToday,
 }
 
 pub fn main() -> Nil {
@@ -100,12 +100,14 @@ pub fn update_click_detailed_month_view_test() {
   let model = state.Model(..model, user: u)
 
   let #(model, _eff) =
-    payment_tracker_web_component.update(model, UserClickedDetailedMonthView(my))
+    payment_tracker_web_component.update(
+      model,
+      UserClickedDetailedMonthView(my),
+    )
 
   let assert MonthlyDetail(mp) = model.current_view
-  assert monthly_payment.month_year_to_string(monthly_payment.get_month_year(
-    mp,
-  )) == "2024-06"
+  assert monthly_payment.month_year_to_string(monthly_payment.get_month_year(mp))
+    == "2024-06"
 }
 
 pub fn update_click_detailed_month_view_missing_test() {
@@ -115,7 +117,10 @@ pub fn update_click_detailed_month_view_missing_test() {
 
   // Month doesn't exist for user
   let #(model, _eff) =
-    payment_tracker_web_component.update(model, UserClickedDetailedMonthView(my))
+    payment_tracker_web_component.update(
+      model,
+      UserClickedDetailedMonthView(my),
+    )
 
   assert model.current_view == AddPayment
 }
@@ -262,7 +267,7 @@ pub fn update_submitted_payment_invalid_test() {
   let #(model, _eff) =
     payment_tracker_web_component.update(model, UserSubmittedPayment(values))
 
-  assert list.length(user.get_payments(model.user)) == 0
+  assert user.get_payments(model.user) == []
 }
 
 pub fn update_toggled_shared_payment_test() {
@@ -287,7 +292,7 @@ pub fn update_deleted_payment_test() {
   let #(model, _eff) =
     payment_tracker_web_component.update(model, UserDeletedPayment(p))
 
-  assert list.length(user.get_payments(model.user)) == 0
+  assert user.get_payments(model.user) == []
 }
 
 pub fn update_deleted_payment_non_existent_test() {
@@ -298,7 +303,7 @@ pub fn update_deleted_payment_non_existent_test() {
   let #(model, _eff) =
     payment_tracker_web_component.update(model, UserDeletedPayment(p))
 
-  assert list.length(user.get_payments(model.user)) == 0
+  assert user.get_payments(model.user) == []
 }
 
 // --- DIALOG & MONTHLY OPERATIONS ---
@@ -357,11 +362,7 @@ pub fn update_submitted_edit_monthly_balance_test() {
   let #(model, _eff) =
     payment_tracker_web_component.update(
       model,
-      state.UserSubmittedEditMonthlyBalance(
-        values,
-        state.HomeLoan,
-        mp,
-      ),
+      state.UserSubmittedEditMonthlyBalance(values, state.HomeLoan, mp),
     )
 
   let monthly_payments = user.get_monthly_payments(model.user)

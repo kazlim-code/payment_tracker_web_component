@@ -27,9 +27,10 @@ This document tracks the current status of features, planned improvements, and t
 - [ ] Explore further use of modern CSS (Container Queries, Scroll Snap).
 
 ### 💾 Storage Architecture
-- [ ] **Standardized Storage API:** Implement a "sans-io" pattern to allow swappable storage backends.
-- [ ] **Default Backend:** Local Storage (parity with previous projects).
+- [x] **Standardized Storage API:** Implement a "sans-io" pattern to allow swappable backends.
+- [x] **Default Backend:** Local Storage (parity with previous projects).
 - [ ] **Advanced Backends:** Flag-based opt-in for SQLite or other databases.
+
 
 ### 🧪 Testing
 - [x] **Prioritized Coverage:** Implement robust unit and integration tests.

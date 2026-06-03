@@ -2,6 +2,9 @@
 
 This document tracks the current status of features, planned improvements, and technical debt for the Payment Tracker Web Component.
 
+## 🦋 Bugs & Fixes
+- [x] Dialog height css issue in Safari browser (height appears close to 0 whereas Chrome browser shows correct sizing around the minimum heights of the internal elements)
+
 ## 🚀 Features & Functionality
 
 ### ℹ️ Version Control

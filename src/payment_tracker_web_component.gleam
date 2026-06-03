@@ -31,7 +31,7 @@ const step_amount: Float = 0.01
 
 // TESTING
 // pub fn main() {
-//   dev.main(fn(_) {init(state.Default)}, update)
+//   dev.main(fn(_) { init(state.Default) }, update)
 // }
 
 pub fn main() {

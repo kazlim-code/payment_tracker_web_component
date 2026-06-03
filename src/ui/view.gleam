@@ -965,7 +965,7 @@ pub fn edit_payment_form(payment payment: Payment) -> List(Element(state.Msg)) {
   [
     html.form(
       [
-        attribute.class("h-full w-full"),
+        attribute.class("flex flex-col w-full"),
         attribute.method("dialog"),
         on_submit_native_close(fn(values: List(#(String, String))) {
           UserSubmittedEditPayment(values, payment)
@@ -1110,7 +1110,7 @@ pub fn edit_monthly_balance_form(
   [
     html.form(
       [
-        attribute.class("h-full w-full"),
+        attribute.class("flex flex-col w-full"),
         attribute.method("dialog"),
         on_submit_native_close(fn(values: List(#(String, String))) {
           UserSubmittedEditMonthlyBalance(values, balance_type, monthly_payment)

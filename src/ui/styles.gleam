@@ -559,8 +559,10 @@ pub fn base() -> Element(msg) {
       background: var(--surface);
       border-radius: var(--radius-sm);
       color: var(--on-surface);
-      height: auto;
-      max-block-size: max-content;
+      display: flex;
+      flex-direction: column;
+      height: -webkit-fit-content;
+      height: fit-content;
       max-height: min(90vh, 90dvh);
       margin: auto;
       position: relative;
@@ -605,7 +607,6 @@ pub fn base() -> Element(msg) {
       display: flex;
       flex-direction: column;
       gap: var(--gap-lg);
-      min-height: 100%;
       padding: var(--gap-md);
 
       & label {

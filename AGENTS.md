@@ -41,8 +41,15 @@ This project uses Gleam and Lustre to build a high-quality web component for tra
 - Use the **imperative mood** (e.g., "Add feature" instead of "Added feature").
 
 ### AI Attribution
-- Any commit generated or significantly assisted by AI must include the following footer:
-  `Co-authored-by: AI-Assistant <ai-assistant@example.com>`
+- Any commit generated or significantly assisted by AI must include the following footer, replacing `[MODEL_NAME]` with the identifier of the active model being used:
+  `Co-authored-by: Gemini <[MODEL_NAME]>`
+
+### Semantic Versioning
+- When completing a feature or task, analyze the changes and suggest the appropriate semantic version bump (Major, Minor, or Patch) based on the rules defined at [https://semver.org/](https://semver.org/):
+  - **MAJOR** version when you make incompatible API changes,
+  - **MINOR** version when you add functionality in a backward compatible manner, and
+  - **PATCH** version when you make backward compatible bug fixes.
+- Instruct the user to run `./scripts/sync_version.sh` after manually updating the version in `gleam.toml`, or offer to update `gleam.toml` and run the script for them.
 
 ## View Hierarchy & Navigation
 1. **Entry Card (View A):**

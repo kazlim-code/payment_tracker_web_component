@@ -39,6 +39,17 @@ To verify the final bundle behavior in a non-Gleam environment:
     cd demo && pnpm dev
     ```
 
+## Versioning
+
+This project follows [Semantic Versioning (SemVer)](https://semver.org/).
+
+- **Source of Truth:** The version is defined in `gleam.toml`.
+- **Synchronization:** The version is synchronized to the Gleam code via a script. If you update the version in `gleam.toml`, you must run:
+  ```sh
+  ./scripts/sync_version.sh
+  ```
+  This generates `src/core/version.gleam`, which is used to display the version in the UI.
+
 ## Testing
 
 This project uses a hybrid testing strategy: **Unit Tests** for logic and **Snapshot Tests** for structural output.

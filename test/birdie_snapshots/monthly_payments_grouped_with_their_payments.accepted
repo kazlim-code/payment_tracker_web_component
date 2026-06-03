@@ -1,7 +1,7 @@
 ---
 version: 2.0.0
 title: Monthly payments grouped with their payments
-file: ./test/snapshots_test.gleam
+file: ./../test/snapshots_test.gleam
 test_name: monthly_grouping_snapshot_test
 ---
 [MonthlyPayment(month_year: MonthYear(June 2024), home_loan_payment: None, home_loan_transfer: None, paid: None, total: 155.0)]

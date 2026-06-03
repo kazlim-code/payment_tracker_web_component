@@ -1,7 +1,7 @@
 ---
 version: 2.0.0
 title: Float formatting with decimal padding (UI use case)
-file: ./test/snapshots_test.gleam
+file: ./../test/snapshots_test.gleam
 test_name: float_formatting_snapshot_test
 ---
 10.0 -> 10.00

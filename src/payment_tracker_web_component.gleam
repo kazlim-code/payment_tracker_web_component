@@ -74,7 +74,7 @@ fn decrement_amount(model: Model) -> Model {
   }
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
+pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     // -- Changing Views ---
     UserClickedAddMonthPayment(date) -> #(
@@ -122,17 +122,22 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       },
       effect.none(),
     )
-    UserClickedMonthlyView -> #(
-      state.Model(
-        ..model,
-        current_view: MonthlySummary,
-        back_view: state.add_view_to_back_stack(
-          add: model.current_view,
-          stack: model.back_view,
-        ),
-      ),
-      effect.none(),
-    )
+    UserClickedMonthlyView -> {
+      case model.current_view {
+        MonthlySummary -> #(model, effect.none())
+        _ -> #(
+          state.Model(
+            ..model,
+            current_view: MonthlySummary,
+            back_view: state.add_view_to_back_stack(
+              add: model.current_view,
+              stack: model.back_view,
+            ),
+          ),
+          effect.none(),
+        )
+      }
+    }
     // --- Add Payment View ---
     UserBlurredAmount(amount) -> #(input_amount(amount, model), effect.none())
     UserChangedPaymentDate(date_string) -> #(

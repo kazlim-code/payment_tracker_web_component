@@ -1,7 +1,7 @@
 ---
 version: 2.0.0
 title: Payment string representation (shared & owed)
-file: ./test/snapshots_test.gleam
+file: ./../test/snapshots_test.gleam
 test_name: payment_string_snapshot_test
 ---
 Payment(id: "fixed-uuid-5678", name: "Shared Grocery", description: "Weekly shopping at local market", amount: 120.5, owed: True, shared: True, payment_date: None)

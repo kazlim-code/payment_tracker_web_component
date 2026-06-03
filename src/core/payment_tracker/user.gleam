@@ -204,12 +204,12 @@ pub fn update_monthly_payment(
   for user: User,
   with monthly_payment: MonthlyPayment,
 ) -> User {
+  let update_month_year = monthly_payment |> monthly_payment.get_month_year
   let monthly_payments =
     user.monthly_payments
     |> list.map(fn(mp: MonthlyPayment) {
       let mp_month_year = mp |> monthly_payment.get_month_year
-      let update_payment_month_year = mp |> monthly_payment.get_month_year
-      case update_payment_month_year == mp_month_year {
+      case update_month_year == mp_month_year {
         True -> monthly_payment
         False -> mp
       }

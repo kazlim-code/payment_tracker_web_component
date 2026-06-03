@@ -7,18 +7,14 @@ import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
-import gleeunit/should
 import tempo/date
 import tempo/datetime
 
 // --- HELPERS -----------------------------------------------------------------
 
 fn create_deterministic_user() -> user.User {
-  let created =
-    "2024-01-01T12:00:00Z"
-    |> datetime.from_string
-    |> should.be_ok
-    |> datetime.to_timestamp
+  let assert Ok(res) = datetime.from_string("2024-01-01T12:00:00Z")
+  let created = res |> datetime.to_timestamp
 
   user.User(
     created: created,
@@ -31,9 +27,9 @@ fn create_deterministic_user() -> user.User {
 }
 
 fn create_deterministic_payments() -> List(payment.Payment) {
-  let d1 = date.from_string("2024-06-01") |> should.be_ok
-  let d2 = date.from_string("2024-06-15") |> should.be_ok
-  let d3 = date.from_string("2024-07-01") |> should.be_ok
+  let assert Ok(d1) = date.from_string("2024-06-01")
+  let assert Ok(d2) = date.from_string("2024-06-15")
+  let assert Ok(d3) = date.from_string("2024-07-01")
 
   [
     payment.Payment(

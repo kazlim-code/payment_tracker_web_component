@@ -28,9 +28,9 @@ This document tracks the current status of features, planned improvements, and t
 - [ ] **Advanced Backends:** Flag-based opt-in for SQLite or other databases.
 
 ### 🧪 Testing
-- [ ] **Prioritized Coverage:** Implement robust unit and integration tests.
-- [ ] Recover/Adapt tests from the predecessor project.
-- [ ] Add tests for core financial calculations and state transitions.
+- [x] **Prioritized Coverage:** Implement robust unit and integration tests.
+- [x] Recover/Adapt tests from the predecessor project.
+- [x] Add tests for core financial calculations and state transitions.
 
 ## 🛠 Technical Debt & Internal
 - [x] Update core payment and UI `.gleam` files with documentation for the modules and functions.

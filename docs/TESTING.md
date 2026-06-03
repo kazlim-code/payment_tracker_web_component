@@ -12,6 +12,13 @@ The core philosophy is:
 
 Unit testing is the primary tool for verifying business logic. It forces the developer to declare explicit intent.
 
+### Standard Assertion Pattern
+We use Gleam's built-in **`assert`** and **`let assert`** keywords. The `gleeunit/should` module is deprecated.
+
+*   **Logic & Equality:** Use `assert expression == expected`. This provides superior failure reporting, showing exact values and code context.
+*   **Custom Messages:** Use `as` for clarity: `assert condition as "Context description"`.
+*   **Pattern Matching:** Use `let assert Ok(val) = result` to unwrap and assert structure.
+
 ### When to use Unit Tests:
 *   **Financial Calculations:** Ensuring that splits, transfers, and totals sum up perfectly (e.g., `monthly_payment.calculate_owed`).
 *   **State Machines / Reducers:** Verifying that a specific action results in a specific state change (e.g., `UserToggledShared` flips a boolean).

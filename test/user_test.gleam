@@ -19,13 +19,13 @@ pub fn delete_payment_test() {
   let u = u |> user.add_payment(p)
 
   let u = u |> user.delete_payment(p.id)
-  assert list.length(user.get_payments(u)) == 0
+  assert user.get_payments(u) == []
 }
 
 pub fn delete_payment_non_existent_test() {
   let u = user.new("Test", "tester")
   let u = u |> user.delete_payment("missing")
-  assert list.length(user.get_payments(u)) == 0
+  assert user.get_payments(u) == []
 }
 
 pub fn get_payments_for_month_test() {
@@ -42,7 +42,7 @@ pub fn get_payments_for_month_empty_test() {
   let u = user.new("Test", "tester")
   let assert Ok(d1) = date.from_string("2024-06-01")
   let june = date.get_month_year(d1)
-  assert list.length(user.get_payments_for_month(u, june)) == 0
+  assert user.get_payments_for_month(u, june) == []
 }
 
 pub fn get_payments_for_month_mismatch_test() {
@@ -53,7 +53,7 @@ pub fn get_payments_for_month_mismatch_test() {
   let u = u |> user.add_payment(p1)
 
   let july = date.get_month_year(d2)
-  assert list.length(user.get_payments_for_month(u, july)) == 0
+  assert user.get_payments_for_month(u, july) == []
 }
 
 pub fn sync_monthly_payments_test() {
@@ -73,13 +73,13 @@ pub fn sync_monthly_payments_remove_unused_test() {
 
   let u = u |> user.add_payment(p1) |> user.sync_monthly_payments
   let u = u |> user.delete_payment(p1.id) |> user.sync_monthly_payments
-  assert list.length(user.get_monthly_payments(u)) == 0
+  assert user.get_monthly_payments(u) == []
 }
 
 pub fn sync_monthly_payments_no_payments_test() {
   let u = user.new("Test", "tester")
   let u = u |> user.sync_monthly_payments
-  assert list.length(user.get_monthly_payments(u)) == 0
+  assert user.get_monthly_payments(u) == []
 }
 
 pub fn update_payment_test() {
@@ -99,7 +99,7 @@ pub fn update_payment_non_existent_test() {
   let u = user.new("Test", "tester")
   let p = payment.new("P1")
   let u = u |> user.update_payment(p)
-  assert list.length(user.get_payments(u)) == 0
+  assert user.get_payments(u) == []
 }
 
 pub fn user_sync_integration_test() {

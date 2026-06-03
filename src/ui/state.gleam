@@ -4,6 +4,7 @@
 import core/payment_tracker/monthly_payment.{type MonthlyPayment}
 import core/payment_tracker/payment.{type Payment}
 import core/payment_tracker/user.{type User}
+import core/storage.{type Response}
 import formal/form.{type Form}
 import gleam/option.{type Option, None, Some}
 import lustre/attribute
@@ -81,6 +82,7 @@ pub type Model {
 /// Messages that can be sent to the update function to change the state.
 ///
 pub type Msg {
+  StorageUpdatedUser(Response)
   UserBlurredAmount(String)
   UserChangedPaymentDate(String)
   UserClickedAddMonthPayment(String)
@@ -145,7 +147,6 @@ pub fn init() -> Model {
 }
 
 fn init_default_user() -> User {
-  // TODO: Init user from external source or local storage
   user.new("Callum", "Kazlim")
 }
 

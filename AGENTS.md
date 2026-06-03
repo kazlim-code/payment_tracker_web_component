@@ -29,6 +29,21 @@ This project uses Gleam and Lustre to build a high-quality web component for tra
 - **Feature Build:** When a feature is complete, ensure the project still builds correctly by running `gleam run -m lustre/dev build` from the project root.
 - **Verification:** Always run `gleam test` to verify logic and structural snapshots before completion.
 
+## Git Workflow & Commits
+### Atomic Commits
+- Make small, focused, and stable changes.
+- Each commit should represent one logical change (e.g., a single bug fix, a new feature, or a refactor).
+- Never commit work that breaks the build or fails tests.
+
+### Conventional Commits
+- Use the Conventional Commits specification: `<type>[optional scope]: <description>`.
+- Common types: `feat`, `fix`, `refactor`, `docs`, `style`, `test`, `chore`.
+- Use the **imperative mood** (e.g., "Add feature" instead of "Added feature").
+
+### AI Attribution
+- Any commit generated or significantly assisted by AI must include the following footer:
+  `Co-authored-by: AI-Assistant <ai-assistant@example.com>`
+
 ## View Hierarchy & Navigation
 1. **Entry Card (View A):**
    - A self-contained "Card" with a form for adding new payments.

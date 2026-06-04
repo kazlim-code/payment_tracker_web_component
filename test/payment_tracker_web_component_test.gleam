@@ -1,6 +1,7 @@
 import core/payment_tracker/monthly_payment
 import core/payment_tracker/payment
 import core/payment_tracker/user
+import core/storage.{LocalStorage}
 import gleam/list
 import gleam/option.{None, Some}
 import gleeunit
@@ -24,7 +25,7 @@ pub fn main() -> Nil {
 // --- HELPERS ---
 
 fn create_mock_model() -> state.Model {
-  state.init()
+  state.init(LocalStorage)
 }
 
 // --- NAVIGATION & VIEW TESTS ---

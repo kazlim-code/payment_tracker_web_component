@@ -1,10 +1,11 @@
-// import dev // TESTING
 import core/payment_tracker/internal/utils
 import core/payment_tracker/monthly_payment
 import core/payment_tracker/payment
 import core/payment_tracker/user
 import core/storage.{LoadUser, SaveUser, UserLoaded, UserSaved}
 import formal/form
+import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/float
 import gleam/io
 import gleam/option.{None, Some}
@@ -24,31 +25,92 @@ import ui/state.{
   UserSubmittedEditPayment, UserSubmittedPayment, UserToggledMonthlyPaymentPaid,
   UserToggledShared, UserToggledSharedPayment, UserToggledToday,
 }
-import ui/storage/local as local_storage
+import ui/storage/factory as storage_factory
 import ui/view
 
 const step_amount: Float = 0.01
 
-// TESTING
-// pub fn main() {
-//   dev.main(fn(_) { init(state.Default) }, update)
-// }
-
 pub fn main() {
-  let init = fn(_: Nil) { init(using: state.Default) }
+  // We use Nil flags for registration as required by lustre.register
   let app = lustre.component(init, update, view.view, [])
   lustre.register(app, "payment-tracker")
 }
 
-fn init(using state: state.Init) -> #(Model, Effect(state.Msg)) {
-  case state {
-    state.ToMonthlyDetail -> #(
-      state.init_with_example_payments(),
-      effect.none(),
+fn init(_flags: Nil) -> #(Model, Effect(state.Msg)) {
+  let attrs = do_get_attributes()
+  let storage_config = decode_storage_config(attrs)
+
+  // Determine if we should load with example data (for dev/demo)
+  let is_demo =
+    decode.run(attrs, decode.at(["demo"], decode.bool))
+    |> result.unwrap(False)
+
+  case is_demo {
+    True -> #(state.init_with_example_payments(), effect.none())
+    _ -> #(
+      state.init(storage_config),
+      storage_factory.perform(storage_config, LoadUser, StorageUpdatedUser),
     )
-    _ -> #(state.init(), local_storage.perform(LoadUser, StorageUpdatedUser))
   }
 }
+
+fn decode_storage_config(attrs: Dynamic) -> storage.StorageConfig {
+  let backend =
+    decode.run(attrs, decode.at(["storage-backend"], decode.string))
+    |> result.unwrap("localstorage")
+
+  case backend {
+    "indexeddb" -> {
+      let name =
+        decode.run(attrs, decode.at(["db-name"], decode.string))
+        |> result.unwrap("payment-tracker-db")
+      storage.IndexedDB(name)
+    }
+    "sqlite" -> {
+      let name =
+        decode.run(attrs, decode.at(["db-name"], decode.string))
+        |> result.unwrap("payment-tracker.db")
+      storage.SQLite(name)
+    }
+    "remote" -> {
+      let endpoint =
+        decode.run(attrs, decode.at(["endpoint"], decode.string))
+        |> result.unwrap("")
+      let database =
+        decode.run(attrs, decode.at(["database"], decode.string))
+        |> option.from_result
+      let auth = decode_remote_auth(attrs)
+      storage.Remote(endpoint, database, auth)
+    }
+    _ -> storage.LocalStorage
+  }
+}
+
+fn decode_remote_auth(attrs: Dynamic) -> storage.RemoteAuth {
+  let token =
+    decode.run(attrs, decode.at(["token"], decode.string))
+    |> option.from_result
+
+  case token {
+    Some(t) -> storage.TokenAuth(t)
+    None -> {
+      let username =
+        decode.run(attrs, decode.at(["username"], decode.string))
+        |> option.from_result
+      let password =
+        decode.run(attrs, decode.at(["password"], decode.string))
+        |> option.from_result
+
+      case username, password {
+        Some(u), Some(p) -> storage.BasicAuth(u, p)
+        _, _ -> storage.NoAuth
+      }
+    }
+  }
+}
+
+@external(javascript, "./ffi.mjs", "get_attributes")
+fn do_get_attributes() -> Dynamic
 
 fn input_amount(value: String, model: Model) -> Model {
   let form_amount =
@@ -77,8 +139,12 @@ fn decrement_amount(model: Model) -> Model {
   }
 }
 
-fn save_user_effect(user: user.User) -> Effect(Msg) {
-  local_storage.perform(SaveUser(user), StorageUpdatedUser)
+fn save_user_effect(model: state.Model) -> Effect(Msg) {
+  storage_factory.perform(
+    model.storage_config,
+    SaveUser(model.user),
+    StorageUpdatedUser,
+  )
 }
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
@@ -224,7 +290,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             |> user.sync_monthly_payments
             |> user.sync_month_payment_totals
 
-          #(state.Model(..model, user:), save_user_effect(user))
+          let model = state.Model(..model, user:)
+          #(model, save_user_effect(model))
         }
         Error(_) -> {
           io.println_error("Form validation failed")
@@ -239,7 +306,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         user.update_payment(model.user, updated_payment)
         |> user.sync_monthly_payments
         |> user.sync_month_payment_totals
-      #(state.Model(..model, user:), save_user_effect(user))
+      let model = state.Model(..model, user:)
+      #(model, save_user_effect(model))
     }
     UserClickedEditPayment(dialog)
     | UserClickedEditHomeLoanAmount(dialog)
@@ -252,7 +320,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         user.delete_payment(model.user, selected_payment.id)
         |> user.sync_monthly_payments
         |> user.sync_month_payment_totals
-      #(state.Model(..model, user:), save_user_effect(user))
+      let model = state.Model(..model, user:)
+      #(model, save_user_effect(model))
     }
     // --- Actioning existing monthly payments ---
     UserToggledMonthlyPaymentPaid(monthly_payment) -> {
@@ -267,7 +336,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           with: monthly_payment
           |> monthly_payment.with_paid(updated_paid_status),
         )
-      #(state.Model(..model, user:, dialog: NoDialog), save_user_effect(user))
+      let model = state.Model(..model, user:, dialog: NoDialog)
+      #(model, save_user_effect(model))
     }
 
     // --- Dialog actions ---
@@ -281,7 +351,9 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           )
           use amount <- form.field(
             "payment-price",
-            form.parse_float |> form.check_float_more_than(0.0),
+            form.parse_float
+              |> form.map(fn(a) { float.to_precision(a, 2) })
+              |> form.check_float_more_than(0.0),
           )
           use category <- form.field(
             "payment-category",
@@ -317,10 +389,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             |> user.sync_monthly_payments
             |> user.sync_month_payment_totals
 
-          #(
-            state.Model(..model, user:, dialog: NoDialog),
-            save_user_effect(user),
-          )
+          let model = state.Model(..model, user:, dialog: NoDialog)
+          #(model, save_user_effect(model))
         }
         Error(_) -> {
           io.println_error("Form validation failed")
@@ -355,10 +425,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               |> monthly_payment.with_home_loan_transfer(Some(amount))
           }
           let user = model.user |> user.update_monthly_payment(with: mp)
-          #(
-            state.Model(..model, user:, dialog: NoDialog),
-            save_user_effect(user),
-          )
+          let model = state.Model(..model, user:, dialog: NoDialog)
+          #(model, save_user_effect(model))
         }
         Error(_) -> {
           io.println_error("Form validation failed")

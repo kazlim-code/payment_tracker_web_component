@@ -60,3 +60,69 @@ export function write(key, value) {
     return new Error(e.message || "Unknown storage error");
   }
 }
+
+// INDEXEDDB
+
+const DB_VERSION = 1;
+const STORE_NAME = "keyvaluepairs";
+
+function withDB(dbName, callback) {
+  const request = indexedDB.open(dbName, DB_VERSION);
+  request.onupgradeneeded = () => {
+    request.result.createObjectStore(STORE_NAME);
+  };
+  request.onsuccess = () => {
+    callback(new Ok(request.result));
+  };
+  request.onerror = () => {
+    callback(new Error("Failed to open IndexedDB: " + request.error.message));
+  };
+}
+
+export function idb_get(dbName, key, callback) {
+  withDB(dbName, (res) => {
+    if (res instanceof Error) return callback(res);
+    const db = res[0];
+    const transaction = db.transaction(STORE_NAME, "readonly");
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get(key);
+    request.onsuccess = () => {
+      if (request.result === undefined) {
+        callback(new Error("NOT_FOUND"));
+      } else {
+        callback(new Ok(request.result));
+      }
+    };
+    request.onerror = () => {
+      callback(new Error("Failed to read from IndexedDB: " + request.error.message));
+    };
+  });
+}
+
+export function idb_set(dbName, key, value, callback) {
+  withDB(dbName, (res) => {
+    if (res instanceof Error) return callback(res);
+    const db = res[0];
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.put(value, key);
+    request.onsuccess = () => {
+      callback(new Ok(undefined));
+    };
+    request.onerror = () => {
+      callback(new Error("Failed to write to IndexedDB: " + request.error.message));
+    };
+  });
+}
+
+// ATTRIBUTES
+
+export function get_attributes() {
+  const el = document.querySelector("payment-tracker");
+  if (!el) return {};
+  const attrs = {};
+  for (const attr of el.attributes) {
+    attrs[attr.name] = attr.value;
+  }
+  return attrs;
+}

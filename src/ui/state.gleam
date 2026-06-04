@@ -4,7 +4,7 @@
 import core/payment_tracker/monthly_payment.{type MonthlyPayment}
 import core/payment_tracker/payment.{type Payment}
 import core/payment_tracker/user.{type User}
-import core/storage.{type Response}
+import core/storage.{type Response, type StorageConfig, LocalStorage}
 import formal/form.{type Form}
 import gleam/option.{type Option, None, Some}
 import lustre/attribute
@@ -66,6 +66,8 @@ pub type Model {
     current_view: View,
     // User
     user: User,
+    // Storage
+    storage_config: StorageConfig,
     // Dialog State
     dialog: Dialog,
     // Form State
@@ -113,12 +115,13 @@ pub type Msg {
 
 /// Initialises the application state.
 ///
-pub fn init() -> Model {
+pub fn init(storage_config: StorageConfig) -> Model {
   let user = init_default_user()
   Model(
     back_view: [],
     current_view: AddPayment,
     user:,
+    storage_config:,
     dialog: NoDialog,
     form_name: "",
     form_amount: 0.0,
@@ -226,6 +229,7 @@ pub fn init_with_example_payments() -> Model {
     back_view: [],
     current_view:,
     user:,
+    storage_config: LocalStorage,
     dialog: NoDialog,
     form_name: "",
     form_amount: 0.0,

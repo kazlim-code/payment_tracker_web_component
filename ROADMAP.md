@@ -4,6 +4,7 @@ This document tracks the current status of features, planned improvements, and t
 
 ## 🦋 Bugs & Fixes
 - [x] Dialog height css issue in Safari browser (height appears close to 0 whereas Chrome browser shows correct sizing around the minimum heights of the internal elements)
+- [x] Hovering each row of the monthly detail table lightens all the td cells, not the tr (visually has breaks between each cell)
 
 ## 🚀 Features & Functionality
 

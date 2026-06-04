@@ -250,6 +250,8 @@ pub fn base() -> Element(msg) {
     .gap-xl { gap: 2rem; }
     .h-full { height: 100%; }
     .w-full { width: 100%; }
+    .border-collapse { border-collapse: collapse; }
+    .text-left { text-align: left; }
     .text-center { text-align: center; }
     .text-right { text-align: right; }
 

@@ -8,6 +8,9 @@ This document tracks the current status of features, planned improvements, and t
 
 ## 🚀 Features & Functionality
 
+### 🚦 Demo
+- [ ] Update /demo project to include indexeddb run option
+
 ### ℹ️ Version Control
 - [x] Add incremental/semantic versioning based on industry standards
 - [x] Show version number in the Footer UI where appropriate (replace dummy code)
@@ -33,7 +36,8 @@ This document tracks the current status of features, planned improvements, and t
 ### 💾 Storage Architecture
 - [x] **Standardized Storage API:** Implement a "sans-io" pattern to allow swappable backends.
 - [x] **Default Backend:** Local Storage (parity with previous projects).
-- [ ] **Advanced Backends:** Flag-based opt-in for SQLite or other databases.
+- [x] **Advanced Backends:** Flag-based opt-in for IndexedDB and extensible architecture for SQLite/Remote.
+- [ ] **SQLite Wasm:** Full implementation of SQLite Wasm backend.
 
 
 ### 🧪 Testing
@@ -43,5 +47,6 @@ This document tracks the current status of features, planned improvements, and t
 
 ## 🛠 Technical Debt & Internal
 - [x] Update core payment and UI `.gleam` files with documentation for the modules and functions.
+- [ ] ** Storage:** Ensure that the storage input to the application is being decoded with the latest gleam stdlib patterns
 - [ ] Modularize UI components (UI functions in Gleam) for better maintainability.
 - [ ] Refine Gleam/JS FFI where necessary for browser-specific APIs (View Transitions, Local Storage).

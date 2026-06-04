@@ -26,6 +26,23 @@ npm run dev
 ### 3. View in Browser
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
+## Configuring the Demo
+
+You can modify `demo/index.html` to test different storage backends or enable demo mode.
+
+```html
+<!-- Test with no data -->
+<payment-tracker></payment-tracker>
+
+<!-- Test IndexedDB -->
+<payment-tracker storage-backend="indexeddb"></payment-tracker>
+<!-- OR with named db -->
+<payment-tracker storage-backend="indexeddb" db-name="my-payments"></payment-tracker>
+
+<!-- Test with example data -->
+<payment-tracker demo="true"></payment-tracker>
+```
+
 ## Project Structure
-- `index.html`: The entry point that imports and runs the web component.
+...- `index.html`: The entry point that imports and runs the web component.
 - `vite.config.ts`: Configured with an `@dist` alias to resolve the compiled Gleam modules from the root `dist` directory.

@@ -31,6 +31,6 @@
   - **Files:** `src/payment_tracker_web_component.gleam`
 
 - [x] **Task 7: Finalize Documentation and Roadmap**
-  - **Acceptance:** `ROADMAP.md` updated to reflect the completed architectural change and IndexedDB support.
-  - **Verify:** `ROADMAP.md` check.
-  - **Files:** `ROADMAP.md`
+  - **Acceptance:** `ROADMAP.md` updated to reflect the completed architectural change and IndexedDB support. `README.md` and `demo/README.md` updated with instructions on how to use IndexedDB via attributes.
+  - **Verify:** Documentation reflects IndexedDB usage.
+  - **Files:** `ROADMAP.md`, `README.md`, `demo/README.md`

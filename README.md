@@ -80,24 +80,31 @@ To generate the self-contained JavaScript bundle:
 gleam run -m lustre/dev build
 ```
 
-The output will be in the `dist/` directory. You can then use it in any HTML file:
+The output will be in the `dist/` directory.
+
+## Usage & Configuration
+
+You can use the component in any HTML file by importing the bundle. The component supports different storage backends via attributes.
+
+### Storage Backends
+
+By default, the component uses `localStorage`. You can switch to `indexeddb` using the `storage-backend` attribute.
+
+| Attribute | Options | Default | Description |
+|-----------|---------|---------|-------------|
+| `storage-backend` | `localstorage`, `indexeddb` | `localstorage` | The storage engine to use. |
+| `db-name` | *string* | `payment-tracker-db` | The name of the IndexedDB database (only used if `storage-backend="indexeddb"`). |
+| `demo` | `true`, `false` | `false` | If true, initializes with example data (useful for demos). |
+
+### Example
 
 ```html
 <body>
-    <payment-tracker></payment-tracker>
+    <!-- Using IndexedDB -->
+    <payment-tracker storage-backend="indexeddb" db-name="my-payments"></payment-tracker>
+
     <script type="module">
         import "@dist/payment_tracker_web_component.js";
-
-        // Diagnostic: Check if the element is registered
-        customElements.whenDefined('payment-tracker').then(() => {
-            console.log('✅ <payment-tracker> has been registered.');
-            const el = document.querySelector('payment-tracker');
-            if (el.shadowRoot) {
-                console.log('✅ Shadow DOM is present.');
-            } else {
-                console.error('❌ Shadow DOM is missing! Registration might have failed or initialized incorrectly.');
-            }
-        });
     </script>
 </body>
 ```

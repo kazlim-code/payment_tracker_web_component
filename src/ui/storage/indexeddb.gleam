@@ -8,8 +8,6 @@ import gleam/result
 import gleam/string
 import lustre/effect.{type Effect}
 
-const user_storage_key = "pt-user"
-
 /// Performs a storage command using IndexedDB.
 ///
 pub fn perform(
@@ -20,11 +18,11 @@ pub fn perform(
   case command {
     SaveUser(user) -> {
       use dispatch <- effect.from
-      do_save_user(db_name, user, to_msg, do_idb_set, dispatch)
+      do_save_user(db_name, user, to_msg, do_idb_save_user, dispatch)
     }
     LoadUser -> {
       use dispatch <- effect.from
-      do_load_user(db_name, to_msg, do_idb_get, dispatch)
+      do_load_user(db_name, to_msg, do_idb_load_user, dispatch)
     }
   }
 }
@@ -35,11 +33,11 @@ pub fn do_save_user(
   db_name: String,
   user: User,
   to_msg: fn(Response) -> msg,
-  set: fn(String, String, String, fn(Result(Nil, String)) -> Nil) -> Nil,
+  save: fn(String, String, fn(Result(Nil, String)) -> Nil) -> Nil,
   dispatch: fn(msg) -> Nil,
 ) -> Nil {
   let user_json = user.to_json(user) |> json.to_string
-  set(db_name, user_storage_key, user_json, fn(res) {
+  save(db_name, user_json, fn(res) {
     res
     |> result.map_error(storage.StorageError)
     |> storage.UserSaved
@@ -53,10 +51,10 @@ pub fn do_save_user(
 pub fn do_load_user(
   db_name: String,
   to_msg: fn(Response) -> msg,
-  get: fn(String, String, fn(Result(String, String)) -> Nil) -> Nil,
+  load: fn(String, fn(Result(String, String)) -> Nil) -> Nil,
   dispatch: fn(msg) -> Nil,
 ) -> Nil {
-  get(db_name, user_storage_key, fn(res) {
+  load(db_name, fn(res) {
     let response = {
       use json_string <- result.try(
         res
@@ -77,17 +75,15 @@ pub fn do_load_user(
   })
 }
 
-@external(javascript, "../../ffi.mjs", "idb_get")
-fn do_idb_get(
+@external(javascript, "../../ffi.mjs", "idb_load_user")
+fn do_idb_load_user(
   db_name: String,
-  key: String,
   callback: fn(Result(String, String)) -> Nil,
 ) -> Nil
 
-@external(javascript, "../../ffi.mjs", "idb_set")
-fn do_idb_set(
+@external(javascript, "../../ffi.mjs", "idb_save_user")
+fn do_idb_save_user(
   db_name: String,
-  key: String,
-  value: String,
+  user_json: String,
   callback: fn(Result(Nil, String)) -> Nil,
 ) -> Nil

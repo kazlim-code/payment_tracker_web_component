@@ -12,6 +12,7 @@
 3. **Refactor `update` and `init`:** Update `src/payment_tracker_web_component.gleam` to use the factory for all storage effects.
 4. **Implement IndexedDB Backend:** Create the `indexeddb.gleam` module and associated FFI in `ffi.mjs`.
 5. **Config Parsing:** Implement the logic to parse custom element attributes and Lustre flags into the `StorageConfig`.
+6. **Reactivity & Initialization Fixes:** Address initialization race conditions (via dynamic DOM insertion in demo) and implement dynamic reactivity to `storage-backend` attribute changes using Lustre's `observed attributes`.
 
 ## 3. Risks & Mitigation
 - **Risk:** `StorageConfig` parsing errors from string attributes.

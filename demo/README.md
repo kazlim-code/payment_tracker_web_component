@@ -30,18 +30,25 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 You can modify `demo/index.html` to test different storage backends or enable demo mode.
 
-```html
-<!-- Test with no data -->
-<payment-tracker></payment-tracker>
+### URL Parameters
+For convenience, the demo supports setting configuration via URL parameters:
+- `?storage=indexeddb`: Sets the storage backend to IndexedDB.
+- `?db=my-custom-db`: Sets a custom database name.
+- `?demo=true`: Loads example data.
 
-<!-- Test IndexedDB -->
-<payment-tracker storage-backend="indexeddb"></payment-tracker>
-<!-- OR with named db -->
-<payment-tracker storage-backend="indexeddb" db-name="my-payments"></payment-tracker>
+Example: `http://localhost:5173/?storage=indexeddb&db=demo-db`
 
-<!-- Test with example data -->
-<payment-tracker demo="true"></payment-tracker>
+### Testing Reactivity
+The component is **reactive** to attribute changes. You can test this in the browser console:
+
+```javascript
+// Switch to IndexedDB on the fly
+document.querySelector('payment-tracker').setAttribute('storage-backend', 'indexeddb');
+
+// Switch back to LocalStorage
+document.querySelector('payment-tracker').setAttribute('storage-backend', 'localstorage');
 ```
+The component will automatically detect the change and re-sync its state with the new backend.
 
 ## Project Structure
 ...- `index.html`: The entry point that imports and runs the web component.

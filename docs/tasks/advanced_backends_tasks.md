@@ -34,3 +34,8 @@
   - **Acceptance:** `ROADMAP.md` updated to reflect the completed architectural change and IndexedDB support. `README.md` and `demo/README.md` updated with instructions on how to use IndexedDB via attributes.
   - **Verify:** Documentation reflects IndexedDB usage.
   - **Files:** `ROADMAP.md`, `README.md`, `demo/README.md`
+
+- [x] **Task 8: Implement Runtime Reactivity and Fix Initialization Race**
+  - **Acceptance:** Initialization race in demo is fixed via dynamic DOM insertion. Component observes and reacts to `storage-backend` attribute changes at runtime.
+  - **Verify:** `demo/index.html` loads correctly with URL params. Setting `storage-backend` in console triggers a reload.
+  - **Files:** `src/payment_tracker_web_component.gleam`, `src/ui/state.gleam`, `demo/index.html`

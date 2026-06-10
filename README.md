@@ -84,7 +84,7 @@ The output will be in the `dist/` directory.
 
 ## Usage & Configuration
 
-You can use the component in any HTML file by importing the bundle. The component supports different storage backends via attributes.
+You can use the component in any HTML file by importing the bundle. The component supports different storage backends via attributes. **The component is reactive**, meaning changing these attributes at runtime via JavaScript will trigger the component to update its state (e.g., swapping storage backends on the fly).
 
 ### Storage Backends
 

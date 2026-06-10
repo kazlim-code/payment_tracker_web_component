@@ -17,8 +17,8 @@ Implement a robust, swappable storage architecture for the Payment Tracker Web C
 To handle sensitive data (like DB credentials), we will support two configuration paths:
 1. **Attributes (Non-sensitive):** Simple flags like `storage-backend="indexeddb"` or `db-name="my-tracker"`.
 2. **Init Flags / JS Properties (Sensitive):** For sensitive data, the component will accept a configuration object via Lustre's `init` flags or a dedicated JS property. This avoids exposing secrets in the DOM.
-
-### Configuration Object Shape (JS)
+## Configuration & Security
+...
 ```javascript
 {
   backend: "remote",
@@ -29,7 +29,14 @@ To handle sensitive data (like DB credentials), we will support two configuratio
 }
 ```
 
+## Runtime Reactivity
+The component uses Lustre's `observed attributes` to react to configuration changes at runtime. 
+- **Observed Attributes:** `storage-backend`.
+- **Behavior:** When the `storage-backend` attribute is modified on the custom element, the component dispatches an internal message to update its `StorageConfig` and triggers a re-sync (`LoadUser`) from the new backend. 
+- **Note on Initialization:** In environments where attributes are set via JavaScript (like the demo), the component should be created and configured *before* being appended to the DOM to ensure the initial state is correct.
+
 ## Project Structure
+
 - `src/core/storage.gleam`:
     - `type StorageConfig { LocalStorage, IndexedDB(name: String), SQLite(name: String), Remote(endpoint: String, api_key: String, db_name: String) }`
 - `src/ui/storage/`:

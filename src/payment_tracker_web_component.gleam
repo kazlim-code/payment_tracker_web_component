@@ -1,3 +1,4 @@
+// import dev
 import core/payment_tracker/internal/utils
 import core/payment_tracker/monthly_payment
 import core/payment_tracker/payment
@@ -10,12 +11,15 @@ import gleam/float
 import gleam/io
 import gleam/option.{None, Some}
 import gleam/result
+import gleam/string
 import lustre
+import lustre/component
 import lustre/effect.{type Effect}
 import tempo/instant
 import ui/state.{
   type Model, type Msg, AddPayment, AutomatedBankTransfer, HomeLoan,
-  MonthlyDetail, MonthlySummary, NoDialog, PaymentData, StorageUpdatedUser,
+  MonthlyDetail, MonthlySummary, NoDialog, ParentUpdatedDemo,
+  ParentUpdatedStorageBackend, PaymentData, StorageUpdatedUser,
   UserBlurredAmount, UserChangedPaymentDate, UserClickedAddMonthPayment,
   UserClickedAddPayment, UserClickedBack, UserClickedDetailedMonthView,
   UserClickedEditHomeLoanAmount, UserClickedEditPayment,
@@ -30,126 +34,58 @@ import ui/view
 
 const step_amount: Float = 0.01
 
+// pub fn main() {
+//   // TODO: Figure out how to utilise the attrs in lustre dev tools or just pass in flags
+//   dev.main(fn(_) { init(Nil) }, update)
+// }
+
 pub fn main() {
   // We use Nil flags for registration as required by lustre.register
-  let app = lustre.component(init, update, view.view, [])
+  let app =
+    lustre.component(init, update, view.view, [
+      component.on_attribute_change("demo", fn(value) {
+        Ok(ParentUpdatedDemo(value))
+      }),
+      component.on_attribute_change("storage-backend", fn(value) {
+        Ok(ParentUpdatedStorageBackend(value))
+      }),
+    ])
   lustre.register(app, "payment-tracker")
 }
 
 fn init(_flags: Nil) -> #(Model, Effect(state.Msg)) {
-  let attrs = do_get_attributes()
-  let storage_config = decode_storage_config(attrs)
-
-  // Determine if we should load with example data (for dev/demo)
-  let is_demo =
-    decode.run(attrs, decode.at(["demo"], decode.bool))
-    |> result.unwrap(False)
-
-  case is_demo {
-    True -> #(state.init_with_example_payments(), effect.none())
-    _ -> #(
-      state.init(storage_config),
-      storage_factory.perform(storage_config, LoadUser, StorageUpdatedUser),
-    )
-  }
-}
-
-fn decode_storage_config(attrs: Dynamic) -> storage.StorageConfig {
-  let backend =
-    decode.run(attrs, decode.at(["storage-backend"], decode.string))
-    |> result.unwrap("localstorage")
-
-  case backend {
-    "indexeddb" -> {
-      let name =
-        decode.run(attrs, decode.at(["db-name"], decode.string))
-        |> result.unwrap("payment-tracker-db")
-      storage.IndexedDB(name)
-    }
-    "sqlite" -> {
-      let name =
-        decode.run(attrs, decode.at(["db-name"], decode.string))
-        |> result.unwrap("payment-tracker.db")
-      storage.SQLite(name)
-    }
-    "remote" -> {
-      let endpoint =
-        decode.run(attrs, decode.at(["endpoint"], decode.string))
-        |> result.unwrap("")
-      let database =
-        decode.run(attrs, decode.at(["database"], decode.string))
-        |> option.from_result
-      let auth = decode_remote_auth(attrs)
-      storage.Remote(endpoint, database, auth)
-    }
-    _ -> storage.LocalStorage
-  }
-}
-
-fn decode_remote_auth(attrs: Dynamic) -> storage.RemoteAuth {
-  let token =
-    decode.run(attrs, decode.at(["token"], decode.string))
-    |> option.from_result
-
-  case token {
-    Some(t) -> storage.TokenAuth(t)
-    None -> {
-      let username =
-        decode.run(attrs, decode.at(["username"], decode.string))
-        |> option.from_result
-      let password =
-        decode.run(attrs, decode.at(["password"], decode.string))
-        |> option.from_result
-
-      case username, password {
-        Some(u), Some(p) -> storage.BasicAuth(u, p)
-        _, _ -> storage.NoAuth
-      }
-    }
-  }
-}
-
-@external(javascript, "./ffi.mjs", "get_attributes")
-fn do_get_attributes() -> Dynamic
-
-fn input_amount(value: String, model: Model) -> Model {
-  let form_amount =
-    value
-    |> float.parse
-    |> result.unwrap(model.form_amount)
-    |> float.to_precision(2)
-  case form_amount <. 0.0 {
-    True -> state.Model(..model, form_amount: 0.0)
-    False -> state.Model(..model, form_amount:)
-  }
-}
-
-fn increment_amount(model: Model) -> Model {
-  state.Model(
-    ..model,
-    form_amount: model.form_amount +. step_amount |> float.to_precision(2),
-  )
-}
-
-fn decrement_amount(model: Model) -> Model {
-  let form_amount = model.form_amount -. step_amount |> float.to_precision(2)
-  case form_amount <. 0.0 {
-    True -> state.Model(..model, form_amount: 0.0)
-    False -> state.Model(..model, form_amount:)
-  }
-}
-
-fn save_user_effect(model: state.Model) -> Effect(Msg) {
-  storage_factory.perform(
-    model.storage_config,
-    SaveUser(model.user),
-    StorageUpdatedUser,
-  )
+  #(state.init(storage.LocalStorage), effect.none())
 }
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     // -- Storage ---
+    ParentUpdatedDemo(demo) -> {
+      let is_demo = demo |> string.lowercase
+      case is_demo {
+        "true" -> #(state.init_with_example_payments(), effect.none())
+        _ -> #(state.init(storage.LocalStorage), effect.none())
+      }
+    }
+    ParentUpdatedStorageBackend(backend) -> {
+      let config = case backend {
+        "indexeddb" -> {
+          let attrs = do_get_attributes()
+          decode.run(attrs, decode.at(["db-name"], decode.string))
+          |> result.map(storage.IndexedDB)
+          |> result.unwrap(storage.IndexedDB("payment-tracker-db"))
+        }
+        "sqlite" -> {
+          let attrs = do_get_attributes()
+          decode.run(attrs, decode.at(["db-name"], decode.string))
+          |> result.map(storage.SQLite)
+          |> result.unwrap(storage.SQLite("payment-tracker.db"))
+        }
+        _ -> storage.LocalStorage
+      }
+      let model = state.Model(..model, storage_config: config)
+      #(model, storage_factory.perform(config, LoadUser, StorageUpdatedUser))
+    }
     StorageUpdatedUser(UserLoaded(Ok(user))) -> #(
       state.Model(..model, user:),
       effect.none(),
@@ -249,7 +185,6 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           use amount <- form.field(
             "payment-price",
             form.parse_float |> form.check_float_more_than(0.0),
-            // form.parse_string |> form.check_not_empty,
           )
           use category <- form.field(
             "payment-category",
@@ -278,7 +213,6 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               id: utils.generate_uuid(),
               name: model.form_name,
               amount: Some(payment_data.amount),
-              // amount: payment_data.amount |> float.parse |> option.from_result,
               description: None,
               owed: True,
               shared: payment_data.shared,
@@ -436,3 +370,47 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
   }
 }
+
+// --- Model updates ---
+
+fn input_amount(value: String, model: Model) -> Model {
+  let form_amount =
+    value
+    |> float.parse
+    |> result.unwrap(model.form_amount)
+    |> float.to_precision(2)
+  case form_amount <. 0.0 {
+    True -> state.Model(..model, form_amount: 0.0)
+    False -> state.Model(..model, form_amount:)
+  }
+}
+
+fn increment_amount(model: Model) -> Model {
+  state.Model(
+    ..model,
+    form_amount: model.form_amount +. step_amount |> float.to_precision(2),
+  )
+}
+
+fn decrement_amount(model: Model) -> Model {
+  let form_amount = model.form_amount -. step_amount |> float.to_precision(2)
+  case form_amount <. 0.0 {
+    True -> state.Model(..model, form_amount: 0.0)
+    False -> state.Model(..model, form_amount:)
+  }
+}
+
+// --- Effects ---
+
+fn save_user_effect(model: state.Model) -> Effect(Msg) {
+  storage_factory.perform(
+    model.storage_config,
+    SaveUser(model.user),
+    StorageUpdatedUser,
+  )
+}
+
+// --- FFI ---
+
+@external(javascript, "./ffi.mjs", "get_attributes")
+fn do_get_attributes() -> Dynamic

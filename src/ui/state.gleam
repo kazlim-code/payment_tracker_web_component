@@ -84,6 +84,8 @@ pub type Model {
 /// Messages that can be sent to the update function to change the state.
 ///
 pub type Msg {
+  ParentUpdatedDemo(String)
+  ParentUpdatedStorageBackend(String)
   StorageUpdatedUser(Response)
   UserBlurredAmount(String)
   UserChangedPaymentDate(String)

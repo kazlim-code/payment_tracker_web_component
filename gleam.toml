@@ -22,6 +22,7 @@ formal = ">= 3.0.1 and < 4.0.0"
 gleam_regexp = ">= 1.1.1 and < 2.0.0"
 gleam_json = ">= 3.1.0 and < 4.0.0"
 gleamsver = ">= 1.0.1 and < 2.0.0"
+modem = ">= 2.1.3 and < 3.0.0"
 # gleam_json = ">= 3.1.0 and < 4.0.0"
 # gleam_regexp = ">= 1.1.1 and < 2.0.0"
 

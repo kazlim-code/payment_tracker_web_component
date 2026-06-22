@@ -13,11 +13,10 @@ import tempo.{type Date, type MonthYear}
 import tempo/date as tempo_date
 import tempo/instant
 
-/// Initialisation options for the application.
+/// Initial configuration options including storage and flag options.
 ///
-pub type Init {
-  Default
-  ToMonthlyDetail
+pub type Config {
+  Config(storage: StorageConfig, uri_query: Bool)
 }
 
 /// The different views available in the application.
@@ -61,13 +60,13 @@ pub type Dialog {
 ///
 pub type Model {
   Model(
+    // Config
+    config: Config,
     // View
     back_view: List(View),
     current_view: View,
     // User
     user: User,
-    // Storage
-    storage_config: StorageConfig,
     // Dialog State
     dialog: Dialog,
     // Form State
@@ -117,13 +116,13 @@ pub type Msg {
 
 /// Initialises the application state.
 ///
-pub fn init(storage_config: StorageConfig) -> Model {
+pub fn init(storage storage: StorageConfig, query uri_query: Bool) -> Model {
   let user = init_default_user()
   Model(
+    config: Config(storage:, uri_query:),
     back_view: [],
     current_view: AddPayment,
     user:,
-    storage_config:,
     dialog: NoDialog,
     form_name: "",
     form_amount: 0.0,
@@ -200,6 +199,8 @@ pub fn add_view_to_back_stack(
 /// Initialises the application with example payment data for development.
 ///
 pub fn init_with_example_payments() -> Model {
+  let storage = LocalStorage
+  let uri_query = True
   let payments = [
     payment.new(name: "Test payment 1")
       |> payment.with_amount(15.0)
@@ -228,10 +229,10 @@ pub fn init_with_example_payments() -> Model {
   }
 
   Model(
+    config: Config(storage:, uri_query:),
     back_view: [],
     current_view:,
     user:,
-    storage_config: LocalStorage,
     dialog: NoDialog,
     form_name: "",
     form_amount: 0.0,

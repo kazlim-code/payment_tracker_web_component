@@ -1,13 +1,14 @@
-import app
+import component
 import lustre
 
 // import dev
 
+// UNCOMMENT FOR DEVELOPMENT
 // pub fn main() {
-//   dev.main(fn(_) { app.init(Nil) }, app.update)
+//   dev.main()
 // }
 
 pub fn main() {
-  let tracker = app.register()
+  let tracker = component.register()
   lustre.register(tracker, "payment-tracker")
 }

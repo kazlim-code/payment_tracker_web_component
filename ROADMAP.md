@@ -15,6 +15,9 @@ This document tracks the current status of features, planned improvements, and t
 - [x] Add incremental/semantic versioning based on industry standards
 - [x] Show version number in the Footer UI where appropriate (replace dummy code)
 
+### Development
+- [x] Look into updating `dev.gleam` to hook into query params much identical in behaviour to how demo works but within gleam code.
+
 ### ⌨️ Keyboard Navigation (Vim-like)
 - [ ] Implement Vim-like keyboard shortcuts (`j`, `k`, `i`, `/`, `esc`).
 - [ ] Add visual focus states for keyboard navigation.

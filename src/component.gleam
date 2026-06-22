@@ -12,10 +12,8 @@ import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
 import lustre
-import lustre/attribute.{type Attribute}
 import lustre/component
 import lustre/effect.{type Effect}
-import lustre/element.{type Element}
 import tempo/instant
 import ui/state.{
   type Model, type Msg, AddPayment, AutomatedBankTransfer, HomeLoan,
@@ -39,6 +37,14 @@ const step_amount: Float = 0.01
 
 pub fn register() -> lustre.App(Nil, Model, Msg) {
   lustre.component(init, update, view.view, [
+    component.on_attribute_change("storage-backend", fn(value) {
+      Ok(ParentUpdatedStorageBackend(value))
+    }),
+  ])
+}
+
+pub fn register_using_uri_query() -> lustre.App(Nil, Model, Msg) {
+  lustre.component(init_with_flags(uri_query: True), update, view.view, [
     component.on_attribute_change("demo", fn(value) {
       Ok(ParentUpdatedDemo(value))
     }),
@@ -48,22 +54,19 @@ pub fn register() -> lustre.App(Nil, Model, Msg) {
   ])
 }
 
-pub fn element(attributes: List(Attribute(Msg))) -> Element(Msg) {
-  element.element("payment-tracker", attributes, [])
+fn init(_: Nil) -> #(Model, Effect(state.Msg)) {
+  #(state.init(storage: storage.LocalStorage, query: False), effect.none())
 }
 
-pub fn demo(value: String) -> Attribute(Msg) {
-  attribute.attribute("demo", value)
-}
-
-pub fn storage_backend(value: String) -> Attribute(Msg) {
-  attribute.attribute("storage-backend", value)
-}
-
-// --- Internal ---
-
-pub fn init(_flags: Nil) -> #(Model, Effect(state.Msg)) {
-  #(state.init(storage.LocalStorage), effect.none())
+pub fn init_with_flags(
+  uri_query uri_query: Bool,
+) -> fn(Nil) -> #(Model, Effect(state.Msg)) {
+  fn(_: Nil) {
+    #(
+      state.init(storage: storage.LocalStorage, query: uri_query),
+      effect.none(),
+    )
+  }
 }
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
@@ -73,11 +76,18 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let is_demo = demo |> string.lowercase
       case is_demo {
         "true" -> #(state.init_with_example_payments(), effect.none())
-        _ -> #(state.init(storage.LocalStorage), effect.none())
+        _ -> #(
+          state.init(
+            storage: storage.LocalStorage,
+            query: model.config.uri_query,
+          ),
+          effect.none(),
+        )
+        // _ -> #(state.init(storage.LocalStorage), effect.none())
       }
     }
     ParentUpdatedStorageBackend(backend) -> {
-      let config = case backend {
+      let storage = case backend {
         "indexeddb" -> {
           let attrs = do_get_attributes()
           decode.run(attrs, decode.at(["db-name"], decode.string))
@@ -92,8 +102,16 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         }
         _ -> storage.LocalStorage
       }
-      let model = state.Model(..model, storage_config: config)
-      #(model, storage_factory.perform(config, LoadUser, StorageUpdatedUser))
+      let config = state.Config(..model.config, storage:)
+      let model = state.Model(..model, config:)
+      #(
+        model,
+        storage_factory.perform(
+          with: config.storage,
+          for: LoadUser,
+          using: StorageUpdatedUser,
+        ),
+      )
     }
     StorageUpdatedUser(UserLoaded(Ok(user))) -> #(
       state.Model(..model, user:),
@@ -413,9 +431,9 @@ fn decrement_amount(model: Model) -> Model {
 
 fn save_user_effect(model: state.Model) -> Effect(Msg) {
   storage_factory.perform(
-    model.storage_config,
-    SaveUser(model.user),
-    StorageUpdatedUser,
+    with: model.config.storage,
+    for: SaveUser(model.user),
+    using: StorageUpdatedUser,
   )
 }
 

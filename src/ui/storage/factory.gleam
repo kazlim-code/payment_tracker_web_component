@@ -14,9 +14,9 @@ import ui/storage/local as local_storage
 /// Performs a storage command using the configured backend.
 ///
 pub fn perform(
-  config: StorageConfig,
-  command: Command,
-  to_msg: fn(Response) -> msg,
+  with config: StorageConfig,
+  for command: Command,
+  using to_msg: fn(Response) -> msg,
 ) -> Effect(msg) {
   case config {
     LocalStorage -> local_storage.perform(command, to_msg)

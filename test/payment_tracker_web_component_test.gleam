@@ -1,4 +1,4 @@
-import app
+import component
 import core/payment_tracker/monthly_payment
 import core/payment_tracker/payment
 import core/payment_tracker/user
@@ -25,14 +25,14 @@ pub fn main() -> Nil {
 // --- HELPERS ---
 
 fn create_mock_model() -> state.Model {
-  state.init(LocalStorage)
+  state.init(storage: LocalStorage, query: False)
 }
 
 // --- NAVIGATION & VIEW TESTS ---
 
 pub fn update_navigate_to_summary_test() {
   let model = create_mock_model()
-  let #(model, _eff) = app.update(model, UserClickedMonthlyView)
+  let #(model, _eff) = component.update(model, UserClickedMonthlyView)
 
   assert model.current_view == MonthlySummary
   assert model.back_view == [AddPayment]
@@ -41,9 +41,9 @@ pub fn update_navigate_to_summary_test() {
 pub fn update_navigate_to_summary_duplicate_test() {
   let model = create_mock_model()
   // Navigate once
-  let #(model, _eff) = app.update(model, UserClickedMonthlyView)
+  let #(model, _eff) = component.update(model, UserClickedMonthlyView)
   // Navigate again
-  let #(model, _eff) = app.update(model, UserClickedMonthlyView)
+  let #(model, _eff) = component.update(model, UserClickedMonthlyView)
 
   // Should not duplicate the view on stack if it's already at top
   assert model.back_view == [AddPayment]
@@ -51,8 +51,8 @@ pub fn update_navigate_to_summary_duplicate_test() {
 
 pub fn update_navigate_back_test() {
   let model = create_mock_model()
-  let #(model, _eff) = app.update(model, UserClickedMonthlyView)
-  let #(model, _eff) = app.update(model, UserClickedBack)
+  let #(model, _eff) = component.update(model, UserClickedMonthlyView)
+  let #(model, _eff) = component.update(model, UserClickedBack)
 
   assert model.current_view == AddPayment
   assert model.back_view == []
@@ -61,7 +61,7 @@ pub fn update_navigate_back_test() {
 pub fn update_navigate_back_empty_stack_test() {
   let model = create_mock_model()
   // Stack is empty
-  let #(model, _eff) = app.update(model, UserClickedBack)
+  let #(model, _eff) = component.update(model, UserClickedBack)
 
   assert model.current_view == AddPayment
   assert model.back_view == []
@@ -70,13 +70,13 @@ pub fn update_navigate_back_empty_stack_test() {
 pub fn update_navigate_back_multiple_test() {
   let model = create_mock_model()
   // Navigate: AddPayment -> MonthlySummary -> AddPayment (via button)
-  let #(model, _eff) = app.update(model, UserClickedMonthlyView)
-  let #(model, _eff) = app.update(model, UserClickedAddMonthPayment(""))
+  let #(model, _eff) = component.update(model, UserClickedMonthlyView)
+  let #(model, _eff) = component.update(model, UserClickedAddMonthPayment(""))
 
   assert model.back_view == [MonthlySummary, AddPayment]
 
   // Back to MonthlySummary
-  let #(model, _eff) = app.update(model, UserClickedBack)
+  let #(model, _eff) = component.update(model, UserClickedBack)
   assert model.current_view == MonthlySummary
   assert model.back_view == [AddPayment]
 }
@@ -91,7 +91,7 @@ pub fn update_click_detailed_month_view_test() {
   let u = user.add_payment(model.user, p) |> user.sync_monthly_payments
   let model = state.Model(..model, user: u)
 
-  let #(model, _eff) = app.update(model, UserClickedDetailedMonthView(my))
+  let #(model, _eff) = component.update(model, UserClickedDetailedMonthView(my))
 
   let assert MonthlyDetail(mp) = model.current_view
   assert monthly_payment.month_year_to_string(monthly_payment.get_month_year(mp))
@@ -104,7 +104,7 @@ pub fn update_click_detailed_month_view_missing_test() {
   let my = tempo_date.get_month_year(date)
 
   // Month doesn't exist for user
-  let #(model, _eff) = app.update(model, UserClickedDetailedMonthView(my))
+  let #(model, _eff) = component.update(model, UserClickedDetailedMonthView(my))
 
   assert model.current_view == AddPayment
 }
@@ -112,7 +112,7 @@ pub fn update_click_detailed_month_view_missing_test() {
 pub fn update_click_add_month_payment_test() {
   let model = create_mock_model()
   let #(model, _eff) =
-    app.update(model, UserClickedAddMonthPayment("2024-06-01"))
+    component.update(model, UserClickedAddMonthPayment("2024-06-01"))
 
   assert model.current_view == AddPayment
   assert model.form_date == "2024-06-01"
@@ -123,14 +123,14 @@ pub fn update_click_add_month_payment_test() {
 
 pub fn update_input_payment_name_test() {
   let model = create_mock_model()
-  let #(model, _eff) = app.update(model, UserInputPaymentName("Rent"))
+  let #(model, _eff) = component.update(model, UserInputPaymentName("Rent"))
 
   assert model.form_name == "Rent"
 }
 
 pub fn update_blurred_amount_test() {
   let model = create_mock_model()
-  let #(model, _eff) = app.update(model, UserBlurredAmount("123.45"))
+  let #(model, _eff) = component.update(model, UserBlurredAmount("123.45"))
 
   assert model.form_amount == 123.45
 }
@@ -138,7 +138,7 @@ pub fn update_blurred_amount_test() {
 pub fn update_blurred_amount_invalid_string_test() {
   let model = create_mock_model()
   let model = state.Model(..model, form_amount: 50.0)
-  let #(model, _eff) = app.update(model, UserBlurredAmount("abc"))
+  let #(model, _eff) = component.update(model, UserBlurredAmount("abc"))
 
   // Keeps old value
   assert model.form_amount == 50.0
@@ -146,7 +146,7 @@ pub fn update_blurred_amount_invalid_string_test() {
 
 pub fn update_blurred_amount_negative_test() {
   let model = create_mock_model()
-  let #(model, _eff) = app.update(model, UserBlurredAmount("-10.0"))
+  let #(model, _eff) = component.update(model, UserBlurredAmount("-10.0"))
 
   // Clamps to 0.0
   assert model.form_amount == 0.0
@@ -154,7 +154,7 @@ pub fn update_blurred_amount_negative_test() {
 
 pub fn update_increment_amount_test() {
   let model = create_mock_model()
-  let #(model, _eff) = app.update(model, UserIncrementedAmount)
+  let #(model, _eff) = component.update(model, UserIncrementedAmount)
 
   assert model.form_amount == 0.01
 }
@@ -162,7 +162,7 @@ pub fn update_increment_amount_test() {
 pub fn update_decrement_amount_test() {
   let model = create_mock_model()
   let model = state.Model(..model, form_amount: 1.0)
-  let #(model, _eff) = app.update(model, UserDecrementedAmount)
+  let #(model, _eff) = component.update(model, UserDecrementedAmount)
 
   assert model.form_amount == 0.99
 }
@@ -170,14 +170,15 @@ pub fn update_decrement_amount_test() {
 pub fn update_decrement_amount_clamp_test() {
   let model = create_mock_model()
   let model = state.Model(..model, form_amount: 0.0)
-  let #(model, _eff) = app.update(model, UserDecrementedAmount)
+  let #(model, _eff) = component.update(model, UserDecrementedAmount)
 
   assert model.form_amount == 0.0
 }
 
 pub fn update_changed_payment_date_test() {
   let model = create_mock_model()
-  let #(model, _eff) = app.update(model, UserChangedPaymentDate("2024-12-25"))
+  let #(model, _eff) =
+    component.update(model, UserChangedPaymentDate("2024-12-25"))
 
   assert model.form_date == "2024-12-25"
 }
@@ -186,10 +187,10 @@ pub fn update_toggled_shared_test() {
   let model = create_mock_model()
   assert model.form_shared_toggle == False
 
-  let #(model, _eff) = app.update(model, UserToggledShared)
+  let #(model, _eff) = component.update(model, UserToggledShared)
   assert model.form_shared_toggle == True
 
-  let #(model, _eff) = app.update(model, UserToggledShared)
+  let #(model, _eff) = component.update(model, UserToggledShared)
   assert model.form_shared_toggle == False
 }
 
@@ -197,7 +198,7 @@ pub fn update_toggled_today_test() {
   let model = create_mock_model()
   assert model.form_today_toggle == True
 
-  let #(model, _eff) = app.update(model, UserToggledToday)
+  let #(model, _eff) = component.update(model, UserToggledToday)
   assert model.form_today_toggle == False
 }
 
@@ -219,7 +220,7 @@ pub fn update_submitted_payment_valid_test() {
     #("payment-date", "2024-06-01"),
   ]
 
-  let #(model, _eff) = app.update(model, UserSubmittedPayment(values))
+  let #(model, _eff) = component.update(model, UserSubmittedPayment(values))
 
   // User should have 1 payment
   assert list.length(user.get_payments(model.user)) == 1
@@ -230,7 +231,7 @@ pub fn update_submitted_payment_invalid_test() {
   // Empty values or missing fields
   let values = []
 
-  let #(model, _eff) = app.update(model, UserSubmittedPayment(values))
+  let #(model, _eff) = component.update(model, UserSubmittedPayment(values))
 
   assert user.get_payments(model.user) == []
 }
@@ -241,7 +242,7 @@ pub fn update_toggled_shared_payment_test() {
   let u = user.add_payment(model.user, p)
   let model = state.Model(..model, user: u)
 
-  let #(model, _eff) = app.update(model, UserToggledSharedPayment(p))
+  let #(model, _eff) = component.update(model, UserToggledSharedPayment(p))
 
   let assert Ok(updated_p) = user.get_payments(model.user) |> list.first
   assert updated_p.shared == True
@@ -253,7 +254,7 @@ pub fn update_deleted_payment_test() {
   let u = user.add_payment(model.user, p)
   let model = state.Model(..model, user: u)
 
-  let #(model, _eff) = app.update(model, UserDeletedPayment(p))
+  let #(model, _eff) = component.update(model, UserDeletedPayment(p))
 
   assert user.get_payments(model.user) == []
 }
@@ -263,7 +264,7 @@ pub fn update_deleted_payment_non_existent_test() {
   let p = payment.new("P1")
   // User has no payments
 
-  let #(model, _eff) = app.update(model, UserDeletedPayment(p))
+  let #(model, _eff) = component.update(model, UserDeletedPayment(p))
 
   assert user.get_payments(model.user) == []
 }
@@ -274,7 +275,7 @@ pub fn update_clicked_edit_payment_dialog_test() {
   let model = create_mock_model()
   let dialog = state.Dialog([], [])
 
-  let #(model, _eff) = app.update(model, UserClickedEditPayment(dialog))
+  let #(model, _eff) = component.update(model, UserClickedEditPayment(dialog))
 
   let assert Dialog(_, _) = model.dialog
 }
@@ -283,7 +284,7 @@ pub fn update_closed_dialog_test() {
   let model = create_mock_model()
   let model = state.Model(..model, dialog: state.Dialog([], []))
 
-  let #(model, _eff) = app.update(model, UserClosedDialog)
+  let #(model, _eff) = component.update(model, UserClosedDialog)
 
   assert model.dialog == NoDialog
 }
@@ -301,7 +302,7 @@ pub fn update_submitted_edit_payment_test() {
   ]
 
   let #(model, _eff) =
-    app.update(model, state.UserSubmittedEditPayment(values, p))
+    component.update(model, state.UserSubmittedEditPayment(values, p))
 
   let assert Ok(updated_p) = user.get_payments(model.user) |> list.first
   assert updated_p.name == "New Name"
@@ -317,7 +318,7 @@ pub fn update_submitted_edit_monthly_balance_test() {
   let values = [#("monthly-balance-amount", "2500.0")]
 
   let #(model, _eff) =
-    app.update(
+    component.update(
       model,
       state.UserSubmittedEditMonthlyBalance(values, state.HomeLoan, mp),
     )
@@ -333,7 +334,8 @@ pub fn update_toggled_monthly_payment_paid_test() {
   let u = model.user |> user.append_monthly_payments([mp])
   let model = state.Model(..model, user: u)
 
-  let #(model, _eff) = app.update(model, UserToggledMonthlyPaymentPaid(mp))
+  let #(model, _eff) =
+    component.update(model, UserToggledMonthlyPaymentPaid(mp))
 
   let monthly_payments = user.get_monthly_payments(model.user)
   let assert Ok(updated_mp) = list.first(monthly_payments)
@@ -348,7 +350,8 @@ pub fn update_toggled_monthly_payment_unpaid_test() {
   let u = model.user |> user.append_monthly_payments([mp])
   let model = state.Model(..model, user: u)
 
-  let #(model, _eff) = app.update(model, UserToggledMonthlyPaymentPaid(mp))
+  let #(model, _eff) =
+    component.update(model, UserToggledMonthlyPaymentPaid(mp))
 
   let monthly_payments = user.get_monthly_payments(model.user)
   let assert Ok(updated_mp) = list.first(monthly_payments)

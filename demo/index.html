@@ -15,15 +15,31 @@
     </style>
 </head>
 <body>
-    <!-- The Lustre Web Component -->
-    <payment-tracker></payment-tracker>
-
     <!--
       We import the production bundle as a module.
       Vite will resolve '@dist' via the alias in vite.config.ts.
     -->
     <script type="module">
         import "@dist/payment_tracker_web_component.js";
+
+        // URL Parameter handling for demo convenience
+        const params = new URLSearchParams(window.location.search);
+        const tracker = document.createElement('payment-tracker');
+        tracker.id = 'tracker';
+
+        if (params.has('storage')) {
+            tracker.setAttribute('storage-backend', params.get('storage'));
+        }
+        if (params.has('db')) {
+            tracker.setAttribute('db-name', params.get('db'));
+        }
+        if (params.has('demo')) {
+            console.log("has demo param", params.get('demo'));
+            tracker.setAttribute('demo', params.get('demo'));
+        }
+
+        // Attach to DOM *after* attributes are set to ensure init reads them
+        document.body.appendChild(tracker);
 
         // Diagnostic: Check if the element is registered
         customElements.whenDefined('payment-tracker').then(() => {

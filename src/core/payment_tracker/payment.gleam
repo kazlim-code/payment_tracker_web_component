@@ -565,6 +565,24 @@ pub fn sort_by_date(
   |> sort_by_direction(direction)
 }
 
+/// Sorts payments by the amount using ascending/descending order.
+///
+pub fn sort_by_amount(
+  payments: List(Payment),
+  direction: sort.Direction,
+) -> List(Payment) {
+  {
+    use payment1, payment2 <- list.sort(payments)
+    case payment1.amount, payment2.amount {
+      Some(amount1), Some(amount2) -> float.compare(amount1, amount2)
+      Some(_), None -> Gt
+      None, Some(_) -> Lt
+      _, _ -> Eq
+    }
+  }
+  |> sort_by_direction(direction)
+}
+
 /// General payment sorting function which sorts the list of payments given
 /// based on a valid payment field and the ascending/descending direction given.
 ///
@@ -576,6 +594,20 @@ pub fn sort_by(
   case field {
     sort.Date -> sort_by_date(payments, direction)
     sort.Name -> sort_by_name(payments, direction)
+    sort.Amount -> sort_by_amount(payments, direction)
+  }
+}
+
+/// Filters the payments by name case-insensitively.
+///
+pub fn filter_by_name(payments: List(Payment), query: String) -> List(Payment) {
+  let query = string.lowercase(query)
+  case string.is_empty(query) {
+    True -> payments
+    False -> {
+      use payment <- list.filter(payments)
+      string.contains(string.lowercase(payment.name), query)
+    }
   }
 }
 

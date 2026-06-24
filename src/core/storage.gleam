@@ -4,6 +4,7 @@
 ////
 
 import core/payment_tracker/user.{type User}
+import gleam/option.{type Option}
 
 /// Represents a command to perform a storage operation.
 ///
@@ -32,4 +33,28 @@ pub type Error {
   DecodeError(String)
   /// No data was found in storage for the requested key.
   NotFound
+}
+
+/// Authentication configuration for a remote storage backend.
+///
+pub type RemoteAuth {
+  /// No authentication required.
+  NoAuth
+  /// Authenticate using a bearer token or API key.
+  TokenAuth(token: String)
+  /// Authenticate using a username and password.
+  BasicAuth(username: String, password: String)
+}
+
+/// Configuration for the storage backend.
+///
+pub type StorageConfig {
+  /// Use the browser's local storage.
+  LocalStorage
+  /// Use the browser's IndexedDB.
+  IndexedDB(name: String)
+  /// Use SQLite (via Wasm).
+  SQLite(name: String)
+  /// Use a remote API or database.
+  Remote(endpoint: String, database: Option(String), auth: RemoteAuth)
 }

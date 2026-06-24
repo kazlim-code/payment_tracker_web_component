@@ -26,6 +26,30 @@ npm run dev
 ### 3. View in Browser
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
+## Configuring the Demo
+
+You can modify `demo/index.html` to test different storage backends or enable demo mode.
+
+### URL Parameters
+For convenience, the demo supports setting configuration via URL parameters:
+- `?storage=indexeddb`: Sets the storage backend to IndexedDB.
+- `?db=my-custom-db`: Sets a custom database name.
+- `?demo=true`: Loads example data.
+
+Example: `http://localhost:5173/?storage=indexeddb&db=demo-db`
+
+### Testing Reactivity
+The component is **reactive** to attribute changes. You can test this in the browser console:
+
+```javascript
+// Switch to IndexedDB on the fly
+document.querySelector('payment-tracker').setAttribute('storage-backend', 'indexeddb');
+
+// Switch back to LocalStorage
+document.querySelector('payment-tracker').setAttribute('storage-backend', 'localstorage');
+```
+The component will automatically detect the change and re-sync its state with the new backend.
+
 ## Project Structure
-- `index.html`: The entry point that imports and runs the web component.
+...- `index.html`: The entry point that imports and runs the web component.
 - `vite.config.ts`: Configured with an `@dist` alias to resolve the compiled Gleam modules from the root `dist` directory.

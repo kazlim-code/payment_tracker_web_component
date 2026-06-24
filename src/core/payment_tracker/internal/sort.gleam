@@ -8,6 +8,7 @@
 pub type Field {
   Date
   Name
+  Amount
 }
 
 /// Sorting by Ascending/Descending.

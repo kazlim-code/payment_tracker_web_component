@@ -51,6 +51,7 @@ Follow the `git-workflow-and-versioning` skill for all git operations.
   - `chore`: Tooling, dependencies, config
   - `style`: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
 - Use the **imperative mood** (e.g., "Add feature" instead of "Added feature").
+- Use **Australian English spelling** (e.g. "initialise", "colour", "standardise", "categorise", "optimisation") in all commit messages, PR descriptions, documentation, and user-facing copy.
 
 ### AI Attribution
 - Any commit generated or significantly assisted by AI must include the following footer, replacing `[MODEL_NAME]` with the identifier of the active model being used:

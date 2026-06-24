@@ -1,10 +1,11 @@
 //// This module defines the state and message types for the Lustre application.
 ////
 
+import core/payment_tracker/internal/sort
 import core/payment_tracker/monthly_payment.{type MonthlyPayment}
 import core/payment_tracker/payment.{type Payment}
 import core/payment_tracker/user.{type User}
-import core/storage.{type Response}
+import core/storage.{type Response, type StorageConfig, LocalStorage}
 import formal/form.{type Form}
 import gleam/option.{type Option, None, Some}
 import lustre/attribute
@@ -13,11 +14,10 @@ import tempo.{type Date, type MonthYear}
 import tempo/date as tempo_date
 import tempo/instant
 
-/// Initialisation options for the application.
+/// Initial configuration options including storage and flag options.
 ///
-pub type Init {
-  Default
-  ToMonthlyDetail
+pub type Config {
+  Config(storage: StorageConfig, uri_query: Bool)
 }
 
 /// The different views available in the application.
@@ -61,6 +61,8 @@ pub type Dialog {
 ///
 pub type Model {
   Model(
+    // Config
+    config: Config,
     // View
     back_view: List(View),
     current_view: View,
@@ -76,12 +78,18 @@ pub type Model {
     form_shared_toggle: Bool,
     form_today_toggle: Bool,
     payment_data: Form(PaymentData),
+    // Sorting & Filtering State
+    detail_search_query: String,
+    detail_sort_by: sort.Field,
+    detail_sort_direction: sort.Direction,
   )
 }
 
 /// Messages that can be sent to the update function to change the state.
 ///
 pub type Msg {
+  ParentUpdatedDemo(String)
+  ParentUpdatedStorageBackend(String)
   StorageUpdatedUser(Response)
   UserBlurredAmount(String)
   UserChangedPaymentDate(String)
@@ -109,13 +117,17 @@ pub type Msg {
   UserToggledShared
   UserToggledSharedPayment(Payment)
   UserToggledToday
+  UserChangedSearchQuery(String)
+  UserClearedSearchQuery
+  UserClickedSortColumn(sort.Field)
 }
 
 /// Initialises the application state.
 ///
-pub fn init() -> Model {
+pub fn init(storage storage: StorageConfig, query uri_query: Bool) -> Model {
   let user = init_default_user()
   Model(
+    config: Config(storage:, uri_query:),
     back_view: [],
     current_view: AddPayment,
     user:,
@@ -143,6 +155,9 @@ pub fn init() -> Model {
 
       form.success(PaymentData(name:, amount:, category:, date:, shared: False))
     }),
+    detail_search_query: "",
+    detail_sort_by: sort.Date,
+    detail_sort_direction: sort.Desc,
   )
 }
 
@@ -195,6 +210,8 @@ pub fn add_view_to_back_stack(
 /// Initialises the application with example payment data for development.
 ///
 pub fn init_with_example_payments() -> Model {
+  let storage = LocalStorage
+  let uri_query = True
   let payments = [
     payment.new(name: "Test payment 1")
       |> payment.with_amount(15.0)
@@ -223,6 +240,7 @@ pub fn init_with_example_payments() -> Model {
   }
 
   Model(
+    config: Config(storage:, uri_query:),
     back_view: [],
     current_view:,
     user:,
@@ -250,5 +268,8 @@ pub fn init_with_example_payments() -> Model {
 
       form.success(PaymentData(name:, amount:, category:, date:, shared: False))
     }),
+    detail_search_query: "",
+    detail_sort_by: sort.Date,
+    detail_sort_direction: sort.Desc,
   )
 }

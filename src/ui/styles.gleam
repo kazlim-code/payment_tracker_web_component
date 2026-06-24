@@ -1184,10 +1184,14 @@ pub fn base() -> Element(msg) {
     }
 
     .detailed-month-table-header-row th {
+      --th-height: 2.5rem;
+      --th-line-height: 1rem;
       padding: var(--gap-sm) var(--gap-md);
       color: var(--on-surface-variant);
       text-transform: uppercase;
       font-weight: 600;
+      height: var(--th-height);
+      line-height: var(--th-line-height);
     }
 
     .sortable-th {

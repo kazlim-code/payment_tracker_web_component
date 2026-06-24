@@ -576,6 +576,7 @@ fn detailed_month_table(
             attribute.type_("text"),
             attribute.placeholder("Search..."),
             attribute.value(model.detail_search_query),
+            attribute.aria_label("Search payments"),
             event.on_input(UserChangedSearchQuery),
             attribute.class("search-input text-sm"),
           ]),
@@ -585,6 +586,7 @@ fn detailed_month_table(
                 [
                   attribute.class("search-clear-btn"),
                   attribute.type_("button"),
+                  attribute.aria_label("Clear search query"),
                   event.on_click(UserClearedSearchQuery),
                 ],
                 [html.text("✕")],
@@ -706,8 +708,20 @@ fn sortable_header(
     False -> ""
   }
 
+  let aria_sort_val = case is_active {
+    True -> {
+      case active_direction {
+        sort.Asc -> "descending"
+        sort.Desc -> "ascending"
+      }
+    }
+    False -> "none"
+  }
+
   html.th(
     [
+      attribute.attribute("scope", "col"),
+      attribute.attribute("aria-sort", aria_sort_val),
       attribute.classes([
         #("sortable-th", True),
         #("text-label-caps", True),
@@ -745,6 +759,7 @@ fn month_payment_table(
         ),
         html.th(
           [
+            attribute.attribute("scope", "col"),
             attribute.class("text-label-caps"),
             attribute.style("width", "9.375rem"),
           ],
@@ -752,6 +767,7 @@ fn month_payment_table(
         ),
         html.th(
           [
+            attribute.attribute("scope", "col"),
             attribute.class("text-label-caps text-center"),
             attribute.style("width", "5rem"),
           ],
@@ -769,6 +785,7 @@ fn month_payment_table(
         ),
         html.th(
           [
+            attribute.attribute("scope", "col"),
             attribute.class("text-label-caps text-right"),
             attribute.style("min-width", "2.5rem"),
           ],

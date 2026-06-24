@@ -2,6 +2,16 @@
 
 A self-contained web component for tracking monthly payments, built with [Gleam](https://gleam.run/) and [Lustre](https://lustre.build/).
 
+## Features
+
+*   **Three Integrated Views**:
+    *   **Add Payment (Card)**: Quick entry form for recording new payments.
+    *   **Monthly Summary**: High-level financial table showing total paid and owed for each month.
+    *   **Monthly Detail**: Chronological checklist of all monthly entries.
+*   **Search & Sort**: Filter monthly payments instantly by name and sort them by date, description, or amount with visible sort direction indicators.
+*   **WAI-ARIA Accessible**: Fully semantic table markup with screen-reader friendly attributes (`scope="col"` and dynamic `aria-sort` state indicators).
+*   **Swappable Storage Engines**: Built-in reactive support for `localStorage` and `IndexedDB` backends.
+
 ## Local Development
 
 To maintain a fast development cycle with Hot Module Replacement (HMR), we use a "Dev Wrapper" app.

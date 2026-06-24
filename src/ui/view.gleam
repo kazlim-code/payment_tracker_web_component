@@ -2,6 +2,7 @@
 //// It uses Lustre to render a declarative, reactive UI based on the application state.
 ////
 
+import core/payment_tracker/internal/sort
 import core/payment_tracker/monthly_payment.{type MonthlyPayment}
 import core/payment_tracker/payment.{type Payment}
 import core/payment_tracker/user
@@ -25,14 +26,15 @@ import tempo/instant
 import ui/state.{
   type Dialog, type Model, type MonthlyBalance, AddPayment,
   AutomatedBankTransfer, Dialog, HomeLoan, MonthlyDetail, MonthlySummary,
-  NoDialog, UserBlurredAmount, UserChangedPaymentDate,
-  UserClickedAddMonthPayment, UserClickedAddPayment, UserClickedBack,
-  UserClickedDetailedMonthView, UserClickedEditHomeLoanAmount,
+  NoDialog, UserBlurredAmount, UserChangedPaymentDate, UserChangedSearchQuery,
+  UserClearedSearchQuery, UserClickedAddMonthPayment, UserClickedAddPayment,
+  UserClickedBack, UserClickedDetailedMonthView, UserClickedEditHomeLoanAmount,
   UserClickedEditPayment, UserClickedEditTransferAmount, UserClickedMonthlyView,
-  UserClosedDialog, UserDecrementedAmount, UserDeletedPayment,
-  UserIncrementedAmount, UserInputPaymentName, UserSubmittedEditMonthlyBalance,
-  UserSubmittedEditPayment, UserSubmittedPayment, UserToggledMonthlyPaymentPaid,
-  UserToggledShared, UserToggledSharedPayment, UserToggledToday,
+  UserClickedSortColumn, UserClosedDialog, UserDecrementedAmount,
+  UserDeletedPayment, UserIncrementedAmount, UserInputPaymentName,
+  UserSubmittedEditMonthlyBalance, UserSubmittedEditPayment,
+  UserSubmittedPayment, UserToggledMonthlyPaymentPaid, UserToggledShared,
+  UserToggledSharedPayment, UserToggledToday,
 }
 
 import ui/styles
@@ -445,8 +447,11 @@ fn detail_view(model: Model, monthly: MonthlyPayment) -> Element(state.Msg) {
         }
       },
       detailed_month_table(
+        model,
         using: monthly_payment,
-        for: payments,
+        for: payments
+          |> payment.filter_by_name(model.detail_search_query)
+          |> payment.sort_by(model.detail_sort_by, model.detail_sort_direction),
         fallback_date: fallback_date,
       ),
       html.div([attribute.class("flex flex-col grow")], []),
@@ -526,6 +531,7 @@ fn detail_month_owed(
 /// Renders the table container and toolbar for the monthly payments list.
 ///
 fn detailed_month_table(
+  model: Model,
   using monthly_payment: MonthlyPayment,
   for payments: List(Payment),
   fallback_date date: String,
@@ -565,6 +571,27 @@ fn detailed_month_table(
           ],
           [html.text(get_entries_label())],
         ),
+        html.div([attribute.class("search-container")], [
+          html.input([
+            attribute.type_("text"),
+            attribute.placeholder("Search..."),
+            attribute.value(model.detail_search_query),
+            event.on_input(UserChangedSearchQuery),
+            attribute.class("search-input text-sm"),
+          ]),
+          case model.detail_search_query != "" {
+            True ->
+              html.button(
+                [
+                  attribute.class("search-clear-btn"),
+                  attribute.type_("button"),
+                  event.on_click(UserClearedSearchQuery),
+                ],
+                [html.text("✕")],
+              )
+            False -> element.none()
+          },
+        ]),
         html.div([attribute.class("flex items-center gap-xs")], [
           stat_row_small(
             label: "Home loan:",
@@ -589,8 +616,13 @@ fn detailed_month_table(
     ),
 
     case list.is_empty(payments) {
-      True -> month_payment_table_empty(date)
-      False -> month_payment_table(with: payments)
+      True -> {
+        case model.detail_search_query == "" {
+          True -> month_payment_table_empty(date)
+          False -> month_payment_search_empty()
+        }
+      }
+      False -> month_payment_table(model, with: payments)
     },
   ])
 }
@@ -629,20 +661,119 @@ fn month_payment_table_empty(fallback_date date: String) -> Element(state.Msg) {
   ])
 }
 
+fn month_payment_search_empty() -> Element(state.Msg) {
+  html.div(
+    [attribute.class("flex flex-col items-center gap-md p-xl text-center")],
+    [
+      html.div(
+        [
+          attribute.class(
+            "bg-surface-variant-dark rounded-xl text-on-surface-variant opacity-40",
+          ),
+        ],
+        [ui_svg.no_payments()],
+      ),
+      html.div(
+        [attribute.class("flex flex-col items-center gap-xs text-center")],
+        [
+          html.h3([attribute.class("text-h3 text-on-surface")], [
+            html.text("No results found"),
+          ]),
+          html.p([attribute.class("text-sm text-on-surface")], [
+            html.text("We couldn't find any payments matching your search."),
+          ]),
+        ],
+      ),
+    ],
+  )
+}
+
+fn sortable_header(
+  label: String,
+  field: sort.Field,
+  active_field: sort.Field,
+  active_direction: sort.Direction,
+  attributes: List(Attribute(state.Msg)),
+) -> Element(state.Msg) {
+  let is_active = field == active_field
+  let indicator = case is_active {
+    True -> {
+      case active_direction {
+        sort.Asc -> " ▲"
+        sort.Desc -> " ▼"
+      }
+    }
+    False -> ""
+  }
+
+  html.th(
+    [
+      attribute.classes([
+        #("sortable-th", True),
+        #("text-label-caps", True),
+        #("active", is_active),
+      ]),
+      event.on_click(UserClickedSortColumn(field)),
+      ..attributes
+    ],
+    [html.text(label <> indicator)],
+  )
+}
+
 /// Renders the semantic table of payments for a given month.
 ///
-fn month_payment_table(with payments: List(Payment)) -> Element(state.Msg) {
+fn month_payment_table(
+  model: Model,
+  with payments: List(Payment),
+) -> Element(state.Msg) {
   html.table([attribute.class("w-full text-left border-collapse")], [
-    // Screen-reader only headers (Highly recommended for accessibility)
-    html.thead([attribute.class("sr-only")], [
+    html.thead([attribute.class("detailed-month-table-header-row")], [
       html.tr([], [
-        html.th([], [html.text("Date")]),
-        html.th([], [html.text("Description")]),
-        html.th([], [html.text("Category")]),
-        html.th([], [html.text("Amount")]),
-        html.th([], [html.text("Selection")]),
-        html.th([], [html.text("Status")]),
-        html.th([], [html.text("Actions")]),
+        sortable_header(
+          "Date",
+          sort.Date,
+          model.detail_sort_by,
+          model.detail_sort_direction,
+          [attribute.style("min-width", "7.5rem")],
+        ),
+        sortable_header(
+          "Description",
+          sort.Name,
+          model.detail_sort_by,
+          model.detail_sort_direction,
+          [attribute.class("w-full")],
+        ),
+        html.th(
+          [
+            attribute.class("text-label-caps"),
+            attribute.style("width", "9.375rem"),
+          ],
+          [html.text("Category")],
+        ),
+        html.th(
+          [
+            attribute.class("text-label-caps text-center"),
+            attribute.style("width", "5rem"),
+          ],
+          [html.text("Shared")],
+        ),
+        sortable_header(
+          "Amount",
+          sort.Amount,
+          model.detail_sort_by,
+          model.detail_sort_direction,
+          [
+            attribute.class("text-right"),
+            attribute.style("min-width", "9.375rem"),
+          ],
+        ),
+        html.th(
+          [
+            attribute.class("text-label-caps text-right"),
+            attribute.style("min-width", "2.5rem"),
+          ],
+          [html.text("Actions")],
+        ),
       ]),
     ]),
 

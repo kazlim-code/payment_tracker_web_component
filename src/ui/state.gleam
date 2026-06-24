@@ -1,6 +1,7 @@
 //// This module defines the state and message types for the Lustre application.
 ////
 
+import core/payment_tracker/internal/sort
 import core/payment_tracker/monthly_payment.{type MonthlyPayment}
 import core/payment_tracker/payment.{type Payment}
 import core/payment_tracker/user.{type User}
@@ -77,6 +78,10 @@ pub type Model {
     form_shared_toggle: Bool,
     form_today_toggle: Bool,
     payment_data: Form(PaymentData),
+    // Sorting & Filtering State
+    detail_search_query: String,
+    detail_sort_by: sort.Field,
+    detail_sort_direction: sort.Direction,
   )
 }
 
@@ -112,6 +117,9 @@ pub type Msg {
   UserToggledShared
   UserToggledSharedPayment(Payment)
   UserToggledToday
+  UserChangedSearchQuery(String)
+  UserClearedSearchQuery
+  UserClickedSortColumn(sort.Field)
 }
 
 /// Initialises the application state.
@@ -147,6 +155,9 @@ pub fn init(storage storage: StorageConfig, query uri_query: Bool) -> Model {
 
       form.success(PaymentData(name:, amount:, category:, date:, shared: False))
     }),
+    detail_search_query: "",
+    detail_sort_by: sort.Date,
+    detail_sort_direction: sort.Desc,
   )
 }
 
@@ -257,5 +268,8 @@ pub fn init_with_example_payments() -> Model {
 
       form.success(PaymentData(name:, amount:, category:, date:, shared: False))
     }),
+    detail_search_query: "",
+    detail_sort_by: sort.Date,
+    detail_sort_direction: sort.Desc,
   )
 }

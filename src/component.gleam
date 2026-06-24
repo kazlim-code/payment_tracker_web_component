@@ -1,3 +1,4 @@
+import core/payment_tracker/internal/sort
 import core/payment_tracker/internal/utils
 import core/payment_tracker/monthly_payment
 import core/payment_tracker/payment
@@ -19,14 +20,15 @@ import ui/state.{
   type Model, type Msg, AddPayment, AutomatedBankTransfer, HomeLoan,
   MonthlyDetail, MonthlySummary, NoDialog, ParentUpdatedDemo,
   ParentUpdatedStorageBackend, PaymentData, StorageUpdatedUser,
-  UserBlurredAmount, UserChangedPaymentDate, UserClickedAddMonthPayment,
-  UserClickedAddPayment, UserClickedBack, UserClickedDetailedMonthView,
-  UserClickedEditHomeLoanAmount, UserClickedEditPayment,
-  UserClickedEditTransferAmount, UserClickedMonthlyView, UserClosedDialog,
-  UserDecrementedAmount, UserDeletedPayment, UserIncrementedAmount,
-  UserInputPaymentName, UserSubmittedEditMonthlyBalance,
-  UserSubmittedEditPayment, UserSubmittedPayment, UserToggledMonthlyPaymentPaid,
-  UserToggledShared, UserToggledSharedPayment, UserToggledToday,
+  UserBlurredAmount, UserChangedPaymentDate, UserChangedSearchQuery,
+  UserClearedSearchQuery, UserClickedAddMonthPayment, UserClickedAddPayment,
+  UserClickedBack, UserClickedDetailedMonthView, UserClickedEditHomeLoanAmount,
+  UserClickedEditPayment, UserClickedEditTransferAmount, UserClickedMonthlyView,
+  UserClickedSortColumn, UserClosedDialog, UserDecrementedAmount,
+  UserDeletedPayment, UserIncrementedAmount, UserInputPaymentName,
+  UserSubmittedEditMonthlyBalance, UserSubmittedEditPayment,
+  UserSubmittedPayment, UserToggledMonthlyPaymentPaid, UserToggledShared,
+  UserToggledSharedPayment, UserToggledToday,
 }
 import ui/storage/factory as storage_factory
 import ui/view
@@ -394,6 +396,38 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           #(model, effect.none())
         }
       }
+    }
+    UserChangedSearchQuery(query) -> #(
+      state.Model(..model, detail_search_query: query),
+      effect.none(),
+    )
+    UserClearedSearchQuery -> #(
+      state.Model(..model, detail_search_query: ""),
+      effect.none(),
+    )
+    UserClickedSortColumn(field) -> {
+      let direction = case model.detail_sort_by == field {
+        True -> {
+          case model.detail_sort_direction {
+            sort.Asc -> sort.Desc
+            sort.Desc -> sort.Asc
+          }
+        }
+        False -> {
+          case field {
+            sort.Date -> sort.Desc
+            _ -> sort.Asc
+          }
+        }
+      }
+      #(
+        state.Model(
+          ..model,
+          detail_sort_by: field,
+          detail_sort_direction: direction,
+        ),
+        effect.none(),
+      )
     }
   }
 }

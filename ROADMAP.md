@@ -28,8 +28,8 @@ This document tracks the current status of features, planned improvements, and t
 - [ ] **Submission Feedback:** Research and implement user feedback (e.g., toast, animation, or status indicator) for successful payment additions.
 
 ### 🔎 Sorting & Filtering
-- [ ] Sort Month detail view table by column (Asc/Desc) for applicable columns
-- [ ] Filter Month detail view table by name via search input
+- [x] Sort Month detail view table by column (Asc/Desc) for applicable columns
+- [x] Filter Month detail view table by name via search input
 
 ### 🔄 View Transitions & Modern CSS
 - [ ] Implement the **View Transitions API** for seamless navigation between views.

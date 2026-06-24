@@ -156,3 +156,69 @@ pub fn format_amount_to_currency_string_none_test() {
 pub fn format_amount_to_currency_string_zero_test() {
   assert payment.format_amount_to_currency_string(Some(0.0)) == "$0.00"
 }
+
+pub fn sort_by_amount_test() {
+  let p1 = payment.new("P1") |> payment.with_amount(15.0)
+  let p2 = payment.new("P2") |> payment.with_amount(5.0)
+  let p3 = payment.new("P3") |> payment.with_amount(30.0)
+  let payments = [p1, p2, p3]
+
+  assert payment.sort_by(payments, sort.Amount, sort.Asc)
+    |> list.map(fn(p) { p.name })
+    == ["P3", "P1", "P2"]
+}
+
+pub fn sort_by_amount_desc_test() {
+  let p1 = payment.new("P1") |> payment.with_amount(15.0)
+  let p2 = payment.new("P2") |> payment.with_amount(5.0)
+  let p3 = payment.new("P3") |> payment.with_amount(30.0)
+  let payments = [p1, p2, p3]
+
+  assert payment.sort_by(payments, sort.Amount, sort.Desc)
+    |> list.map(fn(p) { p.name })
+    == ["P2", "P1", "P3"]
+}
+
+pub fn sort_by_amount_with_none_test() {
+  let p1 = payment.new("P1") |> payment.with_amount(15.0)
+  let p2 = payment.new("P2")
+  // None
+  let p3 = payment.new("P3") |> payment.with_amount(30.0)
+  let payments = [p1, p2, p3]
+
+  assert payment.sort_by(payments, sort.Amount, sort.Asc)
+    |> list.map(fn(p) { p.name })
+    == ["P3", "P1", "P2"]
+}
+
+pub fn filter_by_name_test() {
+  let p1 = payment.new("Rent payment")
+  let p2 = payment.new("Groceries")
+  let p3 = payment.new("Internet Bill")
+  let payments = [p1, p2, p3]
+
+  assert payment.filter_by_name(payments, "payment")
+    |> list.map(fn(p) { p.name })
+    == ["Rent payment"]
+}
+
+pub fn filter_by_name_case_insensitive_test() {
+  let p1 = payment.new("Rent payment")
+  let p2 = payment.new("Groceries")
+  let p3 = payment.new("Internet Bill")
+  let payments = [p1, p2, p3]
+
+  assert payment.filter_by_name(payments, "RENT")
+    |> list.map(fn(p) { p.name })
+    == ["Rent payment"]
+}
+
+pub fn filter_by_name_empty_query_test() {
+  let p1 = payment.new("Rent payment")
+  let p2 = payment.new("Groceries")
+  let payments = [p1, p2]
+
+  assert payment.filter_by_name(payments, "")
+    |> list.map(fn(p) { p.name })
+    == ["Rent payment", "Groceries"]
+}

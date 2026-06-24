@@ -1,4 +1,5 @@
 import component
+import core/payment_tracker/internal/sort
 import core/payment_tracker/monthly_payment
 import core/payment_tracker/payment
 import core/payment_tracker/user
@@ -10,8 +11,9 @@ import tempo/date as tempo_date
 import tempo/instant
 import ui/state.{
   AddPayment, Dialog, MonthlyDetail, MonthlySummary, NoDialog, UserBlurredAmount,
-  UserChangedPaymentDate, UserClickedAddMonthPayment, UserClickedBack,
-  UserClickedDetailedMonthView, UserClickedEditPayment, UserClickedMonthlyView,
+  UserChangedPaymentDate, UserChangedSearchQuery, UserClearedSearchQuery,
+  UserClickedAddMonthPayment, UserClickedBack, UserClickedDetailedMonthView,
+  UserClickedEditPayment, UserClickedMonthlyView, UserClickedSortColumn,
   UserClosedDialog, UserDecrementedAmount, UserDeletedPayment,
   UserIncrementedAmount, UserInputPaymentName, UserSubmittedPayment,
   UserToggledMonthlyPaymentPaid, UserToggledShared, UserToggledSharedPayment,
@@ -356,4 +358,41 @@ pub fn update_toggled_monthly_payment_unpaid_test() {
   let monthly_payments = user.get_monthly_payments(model.user)
   let assert Ok(updated_mp) = list.first(monthly_payments)
   assert monthly_payment.get_paid_timestamp(updated_mp) == None
+}
+
+pub fn update_changed_search_query_test() {
+  let model = create_mock_model()
+  let #(model, _eff) = component.update(model, UserChangedSearchQuery("rent"))
+
+  assert model.detail_search_query == "rent"
+}
+
+pub fn update_cleared_search_query_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, detail_search_query: "rent")
+  let #(model, _eff) = component.update(model, UserClearedSearchQuery)
+
+  assert model.detail_search_query == ""
+}
+
+pub fn update_clicked_sort_column_test() {
+  let model = create_mock_model()
+  // Default is sort.Date, Desc
+  assert model.detail_sort_by == sort.Date
+  assert model.detail_sort_direction == sort.Desc
+
+  // Click same column (Date) -> should toggle to Asc
+  let #(model, _eff) = component.update(model, UserClickedSortColumn(sort.Date))
+  assert model.detail_sort_by == sort.Date
+  assert model.detail_sort_direction == sort.Asc
+
+  // Click different column (Name) -> should switch to sort.Name and default direction (Asc)
+  let #(model, _eff) = component.update(model, UserClickedSortColumn(sort.Name))
+  assert model.detail_sort_by == sort.Name
+  assert model.detail_sort_direction == sort.Asc
+
+  // Click Name again -> toggle to Desc
+  let #(model, _eff) = component.update(model, UserClickedSortColumn(sort.Name))
+  assert model.detail_sort_by == sort.Name
+  assert model.detail_sort_direction == sort.Desc
 }

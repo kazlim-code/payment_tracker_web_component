@@ -90,6 +90,7 @@ pub fn base() -> Element(msg) {
       --summary-view-max-width: 80rem;
       --summary-empty-max-width: 60rem;
       --dialog-max-width: 30rem;
+      --search-max-width: 16rem;
     }
 
     * {
@@ -1121,10 +1122,87 @@ pub fn base() -> Element(msg) {
       backdrop-filter: blur(12px);
       display: flex;
       justify-content: space-between;
+      gap: var(--gap-sm);
+      flex-wrap: wrap;
       padding: var(--gap-sm) var(--gap-md);
       position: sticky;
       top: 0;
       z-index: 10;
+    }
+
+    .search-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      max-width: var(--search-max-width);
+    }
+
+    @container month-view (width < 30rem) {
+      .search-container {
+        order: 3;
+        max-width: 100%;
+      }
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--level-0);
+      border: 1px solid var(--border-neutral);
+      border-radius: var(--radius-sm);
+      color: var(--on-background);
+      padding: var(--gap-xs) var(--gap-sm);
+      padding-right: var(--gap-lg);
+      outline: none;
+      border-left: 2px solid transparent;
+      transition: border-color 0.2s, border-left-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--on-surface);
+      border-left-color: var(--primary);
+    }
+
+    .search-clear-btn {
+      position: absolute;
+      right: var(--gap-xs);
+      background: none;
+      border: none;
+      color: var(--on-surface-variant);
+      cursor: pointer;
+      padding: var(--gap-xs);
+      font-size: var(--text-sm);
+    }
+
+    .search-clear-btn:hover {
+      color: var(--on-surface);
+    }
+
+    .detailed-month-table-header-row {
+      background: var(--surface-container-low);
+      border-bottom: 1px solid var(--border-neutral);
+    }
+
+    .detailed-month-table-header-row th {
+      padding: var(--gap-sm) var(--gap-md);
+      color: var(--on-surface-variant);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .sortable-th {
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s, background-color 0.2s;
+    }
+
+    .sortable-th:hover {
+      background-color: var(--surface-container-high);
+      color: var(--on-surface);
+    }
+
+    .sortable-th.active {
+      color: var(--primary);
     }
 
     .detailed-month-table-row {

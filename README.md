@@ -14,37 +14,27 @@ A self-contained web component for tracking monthly payments, built with [Gleam]
 
 ## Local Development
 
-To maintain a fast development cycle with Hot Module Replacement (HMR), we use a "Dev Wrapper" app.
+To maintain a fast development cycle with Hot Module Replacement (HMR), we use a "Dev Wrapper" app. Lustre's dev tools support targeting specific entry points by passing the module name as a command-line argument.
 
 ### Running the Dev Server
-Lustre's dev server currently defaults to the project's main module. To use the dev wrapper:
 
-1.  Open `src/payment_tracker_web_component.gleam`.
-2.  Switch the `main` function to use the dev entry point:
-    ```gleam
-    import dev
-    pub fn main() { dev.main(state.Default) }
+To run the dev wrapper application using the `main` function in [dev.gleam](file:///Users/callum/Documents/GitHub/payment_tracker_web_component/src/dev.gleam):
 
-    // pub fn main() {
-    //   let app = lustre.component(init, update, view.view, [])
-    //   lustre.register(app, "payment-tracker")
-    // }
-    ```
-3.  Run the Lustre dev server:
+1.  Run the Lustre dev server, specifying the `dev` module:
     ```sh
-    gleam run -m lustre/dev start
+    gleam run -m lustre/dev start dev
     ```
-4.  Open [http://localhost:1234](http://localhost:1234). You are now seeing the actual `<payment-tracker>` web component running inside a Lustre host app.
+2.  Open [http://localhost:1234](http://localhost:1234). You are now seeing the actual `<payment-tracker>` web component running inside the Lustre host dev app.
 
 ### Testing the Production Bundle
+
 To verify the final bundle behavior in a non-Gleam environment:
 
-1.  **Revert** the `main` function in `src/payment_tracker_web_component.gleam` to its production version (registration only).
-2.  **Build** the component:
+1.  **Build** the component using the main entry module [payment_tracker_web_component.gleam](file:///Users/callum/Documents/GitHub/payment_tracker_web_component/src/payment_tracker_web_component.gleam):
     ```sh
     gleam run -m lustre/dev build
     ```
-3.  **Start the demo server**:
+2.  **Start the demo server**:
     ```sh
     cd demo && pnpm dev
     ```
@@ -84,7 +74,7 @@ For a detailed breakdown of our testing philosophy and naming conventions, see [
 
 ## Building for Production
 
-To generate the self-contained JavaScript bundle:
+To generate the self-contained JavaScript bundle, target the main entrypoint module:
 
 ```sh
 gleam run -m lustre/dev build

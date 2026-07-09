@@ -1,3 +1,4 @@
+import plinth/javascript/global
 import core/payment_tracker/internal/sort
 import core/payment_tracker/internal/utils
 import core/payment_tracker/monthly_payment
@@ -490,13 +491,11 @@ fn save_user_effect(model: state.Model) -> Effect(Msg) {
 
 fn delay_msg(by delay: Int, msg msg: state.Msg) -> Effect(state.Msg) {
   use dispatch <- effect.from
-  do_delay(delay, fn() { dispatch(msg) })
+  global.set_timeout(delay, fn() { dispatch(msg) })
+  Nil
 }
 
 // --- FFI ---
 
 @external(javascript, "./ffi.mjs", "get_attributes")
 fn do_get_attributes() -> Dynamic
-
-@external(javascript, "./ffi.mjs", "delay")
-fn do_delay(ms: Int, callback: fn() -> Nil) -> Nil

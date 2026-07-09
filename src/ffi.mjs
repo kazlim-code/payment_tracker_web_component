@@ -4,12 +4,6 @@ export function uuid() {
   return crypto.randomUUID();
 }
 
-export function delay(ms, cb) {
-  // TODO: Check if I actually need an FFI or whether I can use an existing module
-  // TODO: Check if I need any form of clearing timeout by name
-  setTimeout(cb, ms);
-}
-
 // LOCAL STORAGE
 
 const getStorage = () => {

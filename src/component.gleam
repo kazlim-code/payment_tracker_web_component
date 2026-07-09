@@ -21,14 +21,14 @@ import ui/state.{
   MonthlyDetail, MonthlySummary, NoDialog, ParentUpdatedDemo,
   ParentUpdatedStorageBackend, PaymentData, StorageUpdatedUser,
   UserBlurredAmount, UserChangedPaymentDate, UserChangedSearchQuery,
-  UserClearedSearchQuery, UserClickedAddMonthPayment, UserClickedAddPayment,
-  UserClickedBack, UserClickedDetailedMonthView, UserClickedEditHomeLoanAmount,
-  UserClickedEditPayment, UserClickedEditTransferAmount, UserClickedMonthlyView,
-  UserClickedSortColumn, UserClosedDialog, UserDecrementedAmount,
-  UserDeletedPayment, UserIncrementedAmount, UserInputPaymentName,
-  UserSubmittedEditMonthlyBalance, UserSubmittedEditPayment,
-  UserSubmittedPayment, UserToggledMonthlyPaymentPaid, UserToggledShared,
-  UserToggledSharedPayment, UserToggledToday,
+  UserClearedSearchQuery, UserClearedSuccessFeedback, UserClickedAddMonthPayment,
+  UserClickedAddPayment, UserClickedBack, UserClickedDetailedMonthView,
+  UserClickedEditHomeLoanAmount, UserClickedEditPayment,
+  UserClickedEditTransferAmount, UserClickedMonthlyView, UserClickedSortColumn,
+  UserClosedDialog, UserDecrementedAmount, UserDeletedPayment,
+  UserIncrementedAmount, UserInputPaymentName, UserSubmittedEditMonthlyBalance,
+  UserSubmittedEditPayment, UserSubmittedPayment, UserToggledMonthlyPaymentPaid,
+  UserToggledShared, UserToggledSharedPayment, UserToggledToday,
 }
 import ui/storage/factory as storage_factory
 import ui/view
@@ -190,6 +190,12 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       state.Model(..model, form_date: date_string),
       effect.none(),
     )
+    UserClearedSuccessFeedback(expected_count) -> {
+      case expected_count == model.form_success_count {
+        True -> #(state.Model(..model, form_success_count: 0), effect.none())
+        False -> #(model, effect.none())
+      }
+    }
     UserDecrementedAmount -> #(decrement_amount(model), effect.none())
     UserIncrementedAmount -> #(increment_amount(model), effect.none())
     UserInputPaymentName(name) -> #(
@@ -237,6 +243,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
       case results {
         Ok(payment_data) -> {
+          let form_success_count = model.form_success_count + 1
           let new_payment =
             payment.Payment(
               id: utils.generate_uuid(),
@@ -253,8 +260,18 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             |> user.sync_monthly_payments
             |> user.sync_month_payment_totals
 
-          let model = state.Model(..model, user:)
-          #(model, save_user_effect(model))
+          let model = state.Model(..model, form_success_count:, user:)
+          #(
+            model,
+            // TODO: Use named const for delay number readability
+            effect.batch([
+              save_user_effect(model),
+              delay_msg(
+                2500,
+                UserClearedSuccessFeedback(expected_count: form_success_count),
+              ),
+            ]),
+          )
         }
         Error(_) -> {
           io.println_error("Form validation failed")
@@ -471,7 +488,15 @@ fn save_user_effect(model: state.Model) -> Effect(Msg) {
   )
 }
 
+fn delay_msg(by delay: Int, msg msg: state.Msg) -> Effect(state.Msg) {
+  use dispatch <- effect.from
+  do_delay(delay, fn() { dispatch(msg) })
+}
+
 // --- FFI ---
 
 @external(javascript, "./ffi.mjs", "get_attributes")
 fn do_get_attributes() -> Dynamic
+
+@external(javascript, "./ffi.mjs", "delay")
+fn do_delay(ms: Int, callback: fn() -> Nil) -> Nil

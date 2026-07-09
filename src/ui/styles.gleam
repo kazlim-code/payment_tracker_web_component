@@ -37,6 +37,8 @@ pub fn base() -> Element(msg) {
       --border-neutral: #1e293b;
       --border-subtle: #334155;
 
+      --success: #51d995;
+
       --status-paid: #81c995;
       --status-owed: #f28b82;
 
@@ -97,6 +99,29 @@ pub fn base() -> Element(msg) {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+
+    /* --- Animations --- */
+
+    @keyframes button-success {
+      5% {
+        scale: 1.1;
+      }
+      40% {
+        rotate: 1.5deg;
+      }
+      50% {
+        rotate: 0deg;
+      }
+      60% {
+        rotate: -1.5deg;
+      }
+      61% {
+        scale: 1;
+      }
+      100% {
+        background: var(--success);
+      }
     }
 
     /* --- Dialog & Popover styles --- */
@@ -325,10 +350,14 @@ pub fn base() -> Element(msg) {
       cursor: pointer;
       display: flex;
       gap: 0.5rem;
+      transition: background 0.2s ease-in;
 
       &:hover {
         color: white;
       }
+    }
+    .btn-primary.success {
+      animation: button-success 0.5s ease-in-out forwards;
     }
 
     /* .btn-secondary {

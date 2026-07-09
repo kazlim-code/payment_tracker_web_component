@@ -4,6 +4,12 @@ export function uuid() {
   return crypto.randomUUID();
 }
 
+export function delay(ms, cb) {
+  // TODO: Check if I actually need an FFI or whether I can use an existing module
+  // TODO: Check if I need any form of clearing timeout by name
+  setTimeout(cb, ms);
+}
+
 // LOCAL STORAGE
 
 const getStorage = () => {
@@ -93,7 +99,9 @@ function withDB(dbName, callback) {
     callback(new Ok(request.result));
   };
   request.onerror = () => {
-    callback(new Error("⚠️ Failed to open IndexedDB: " + request.error.message));
+    callback(
+      new Error("⚠️ Failed to open IndexedDB: " + request.error.message),
+    );
   };
 }
 
@@ -106,7 +114,7 @@ export function idb_load_user(dbName, callback) {
     const db = res[0];
     const transaction = db.transaction(
       [USERS_STORE, PAYMENTS_STORE, USER_PAYMENTS_STORE],
-      "readonly"
+      "readonly",
     );
 
     const usersStore = transaction.objectStore(USERS_STORE);
@@ -122,7 +130,9 @@ export function idb_load_user(dbName, callback) {
 
       // I'll update onupgradeneeded to add an index.
       const payments = [];
-      const userPaymentsRequest = userPaymentsStore.openCursor(IDBKeyRange.bound([user.username], [user.username, []]));
+      const userPaymentsRequest = userPaymentsStore.openCursor(
+        IDBKeyRange.bound([user.username], [user.username, []]),
+      );
 
       userPaymentsRequest.onsuccess = (event) => {
         const cursor = event.target.result;
@@ -146,7 +156,9 @@ export function idb_load_user(dbName, callback) {
     };
 
     transaction.onerror = () => {
-      callback(new Error("⚠️ Failed to load user: " + transaction.error.message));
+      callback(
+        new Error("⚠️ Failed to load user: " + transaction.error.message),
+      );
     };
   });
 }
@@ -166,7 +178,7 @@ export function idb_save_user(dbName, userJson, callback) {
     const db = res[0];
     const transaction = db.transaction(
       [USERS_STORE, PAYMENTS_STORE, USER_PAYMENTS_STORE],
-      "readwrite"
+      "readwrite",
     );
 
     const usersStore = transaction.objectStore(USERS_STORE);
@@ -202,7 +214,9 @@ export function idb_save_user(dbName, userJson, callback) {
     };
 
     transaction.onerror = () => {
-      callback(new Error("⚠️ Failed to save user: " + transaction.error.message));
+      callback(
+        new Error("⚠️ Failed to save user: " + transaction.error.message),
+      );
     };
   });
 }

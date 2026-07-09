@@ -76,6 +76,19 @@ fn add_payment_view(model: Model) -> Element(state.Msg) {
 /// amount, name, and metadata.
 ///
 fn add_payment_form(with model: Model) -> Element(state.Msg) {
+  let submit_button_label = case model.form_success_count {
+    0 -> "Record payment"
+    1 -> "Added payment!"
+    count -> "Added " <> int.to_string(count) <> " payments!"
+  }
+
+  let submit_success =
+    attribute.classes([
+      #("btn-primary", True),
+      #("uppercase", True),
+      #("success", model.form_success_count > 0),
+    ])
+
   html.form([event.on_submit(UserSubmittedPayment)], [
     add_payment_price(with: model.form_amount),
     html.div([attribute.class("form-layout")], [
@@ -109,10 +122,10 @@ fn add_payment_form(with model: Model) -> Element(state.Msg) {
         ),
         html.button(
           [
-            attribute.class("btn-primary uppercase"),
+            submit_success,
             type_("submit"),
           ],
-          [html.text("Record payment")],
+          [html.text(submit_button_label)],
         ),
       ]),
     ]),

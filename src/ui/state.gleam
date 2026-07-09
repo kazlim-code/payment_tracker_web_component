@@ -77,6 +77,7 @@ pub type Model {
     form_date: String,
     form_shared_toggle: Bool,
     form_today_toggle: Bool,
+    form_success_count: Int,
     payment_data: Form(PaymentData),
     // Sorting & Filtering State
     detail_search_query: String,
@@ -93,6 +94,7 @@ pub type Msg {
   StorageUpdatedUser(Response)
   UserBlurredAmount(String)
   UserChangedPaymentDate(String)
+  UserClearedSuccessFeedback(expected_count: Int)
   UserClickedAddMonthPayment(String)
   UserClickedAddPayment
   UserClickedBack
@@ -138,6 +140,7 @@ pub fn init(storage storage: StorageConfig, query uri_query: Bool) -> Model {
     form_date: "",
     form_shared_toggle: False,
     form_today_toggle: True,
+    form_success_count: 0,
     payment_data: form.new({
       use name <- form.field(
         "payment-name",
@@ -251,6 +254,7 @@ pub fn init_with_example_payments() -> Model {
     form_date: "",
     form_shared_toggle: False,
     form_today_toggle: True,
+    form_success_count: 0,
     payment_data: form.new({
       use name <- form.field(
         "payment-name",

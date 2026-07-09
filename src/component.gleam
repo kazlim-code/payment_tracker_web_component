@@ -35,6 +35,7 @@ import ui/storage/factory as storage_factory
 import ui/view
 
 const step_amount: Float = 0.01
+const success_feedback_delay_ms: Int = 2500
 
 // --- Component API ---
 
@@ -264,11 +265,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           let model = state.Model(..model, form_success_count:, user:)
           #(
             model,
-            // TODO: Use named const for delay number readability
             effect.batch([
               save_user_effect(model),
               delay_msg(
-                2500,
+                success_feedback_delay_ms,
                 UserClearedSuccessFeedback(expected_count: form_success_count),
               ),
             ]),

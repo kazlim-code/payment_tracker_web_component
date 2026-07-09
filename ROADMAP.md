@@ -17,6 +17,7 @@ This document tracks the current status of features, planned improvements, and t
 
 ### Development
 - [x] Look into updating `dev.gleam` to hook into query params much identical in behaviour to how demo works but within gleam code.
+- [ ] Update debug devtools_panel section in view.gleam to be absolutely placed
 
 ### ⌨️ Keyboard Navigation (Vim-like)
 - [ ] Implement Vim-like keyboard shortcuts (`j`, `k`, `i`, `/`, `esc`).
@@ -25,13 +26,14 @@ This document tracks the current status of features, planned improvements, and t
 
 ### 📝 Form Polish & UX
 - [x] **Rapid Entry:** The "Add Payment" form does NOT reset after submission to facilitate adding multiple similar payments.
-- [ ] **Submission Feedback:** Research and implement user feedback (e.g., toast, animation, or status indicator) for successful payment additions.
+- [x] **Submission Feedback:** Research and implement user feedback (e.g., toast, animation, or status indicator) for successful payment additions.
 
 ### 🔎 Sorting & Filtering
 - [x] Sort Month detail view table by column (Asc/Desc) for applicable columns
 - [x] Filter Month detail view table by name via search input
 
 ### 🔄 View Transitions & Modern CSS
+- [ ] Update hex code colours to oklab hsla or whatever modern practices are used.
 - [ ] Implement the **View Transitions API** for seamless navigation between views.
 - [ ] **Hero Transition:** Transition the "Add Payment" input box to the header/center when switching to the Monthly Summary view, and back.
 - [ ] Explore further use of modern CSS (Container Queries, Scroll Snap).

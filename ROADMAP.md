@@ -17,7 +17,7 @@ This document tracks the current status of features, planned improvements, and t
 
 ### Development
 - [x] Look into updating `dev.gleam` to hook into query params much identical in behaviour to how demo works but within gleam code.
-- [ ] Update debug devtools_panel section in view.gleam to be absolutely placed
+- [x] Update debug devtools_panel section in view.gleam to be absolutely placed
 
 ### ⌨️ Keyboard Navigation (Vim-like)
 - [ ] Implement Vim-like keyboard shortcuts (`j`, `k`, `i`, `/`, `esc`).

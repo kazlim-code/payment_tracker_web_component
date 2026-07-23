@@ -266,12 +266,19 @@ pub fn devtools_panel(model: Model) -> Element(state.Msg) {
   let payments_string = user.payments_to_string(model.user)
   html.div(
     [
-      attribute.class("debug"),
+      attribute.class("debug-container"),
     ],
     [
-      html.pre([attribute.class("whitespace-pre-wrap")], [
-        html.text(payments_string),
-      ]),
+      html.div(
+        [
+          attribute.class("debug"),
+        ],
+        [
+          html.pre([attribute.class("whitespace-pre-wrap")], [
+            html.text(payments_string),
+          ]),
+        ],
+      )
     ],
   )
 }

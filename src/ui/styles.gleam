@@ -89,6 +89,7 @@ pub fn base() -> Element(msg) {
       --vim-footer-height: 2.5rem;
 
       --add-payment-view-max-width: 60rem;
+      --debug-pre-min-height: 10rem;
       --summary-view-max-width: 80rem;
       --summary-empty-max-width: 60rem;
       --dialog-max-width: 30rem;
@@ -1281,25 +1282,30 @@ pub fn base() -> Element(msg) {
       }
     }
 
-    .debug {
-      background: black;
-      border: 1px solid var(--on-background);
-      border-radius: var(--radius-md);
-      display: grid;
-      gap: var(--gap-sm);
-      margin-inline: auto;
-      margin-top: var(--gap-xl);
-      overflow-x: auto;
-
+    .debug-container {
+      position: relative;
+      min-height: var(--debug-pre-min-height);
       max-width: var(--add-payment-view-max-width);
       min-width: auto;
       margin-inline: auto;
+      margin-top: var(--gap-xl);
       padding: var(--gap-md);
       width: 100%;
 
       @container add-payment (width > 45rem) {
         width: max(45rem, 80cqi);
       }
+    }
+
+    .debug {
+      background: black;
+      border: 1px solid var(--on-background);
+      border-radius: var(--radius-md);
+      gap: var(--gap-sm);
+      inset: 0;
+      overflow-x: auto;
+      padding: var(--gap-md);
+      position: absolute;
 
       & > pre {
         white-space: pre-wrap;

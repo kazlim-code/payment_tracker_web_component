@@ -59,15 +59,17 @@ pub fn view(model: Model) -> Element(state.Msg) {
 // --- ENTRY VIEW (Add Payment) ---
 
 /// Renders the entry view for recording a new payment, including the
-/// header, form, and debug panel.
+/// header, form, and optional debug panel.
 ///
 fn add_payment_view(model: Model) -> Element(state.Msg) {
   html.section([attribute.class("add-payment-view")], [
     header_view(model),
     html.main([], [
       add_payment_form(with: model),
-
-      devtools_panel(model),
+      case model.config.debug {
+        True -> devtools_panel(model)
+        False -> element.none()
+      },
     ]),
   ])
 }
@@ -278,7 +280,7 @@ pub fn devtools_panel(model: Model) -> Element(state.Msg) {
             html.text(payments_string),
           ]),
         ],
-      )
+      ),
     ],
   )
 }

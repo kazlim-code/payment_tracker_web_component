@@ -65,6 +65,7 @@ fn attributes_from_uri_query() -> List(attribute.Attribute(a)) {
             Ok(attribute.attribute("storage-backend", value))
           #("db", value) -> Ok(attribute.attribute("db-name", value))
           #("demo", value) -> Ok(attribute.attribute("demo", value))
+          #("debug", value) -> Ok(attribute.attribute("debug", value))
           _ -> Error(Nil)
         }
       })

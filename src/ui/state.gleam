@@ -14,10 +14,10 @@ import tempo.{type Date, type MonthYear}
 import tempo/date as tempo_date
 import tempo/instant
 
-/// Initial configuration options including storage and flag options.
+/// Initial configuration options including storage, flag and debug options.
 ///
 pub type Config {
-  Config(storage: StorageConfig, uri_query: Bool)
+  Config(storage: StorageConfig, uri_query: Bool, debug: Bool)
 }
 
 /// The different views available in the application.
@@ -89,6 +89,7 @@ pub type Model {
 /// Messages that can be sent to the update function to change the state.
 ///
 pub type Msg {
+  ParentUpdatedDebug(String)
   ParentUpdatedDemo(String)
   ParentUpdatedStorageBackend(String)
   StorageUpdatedUser(Response)
@@ -129,7 +130,7 @@ pub type Msg {
 pub fn init(storage storage: StorageConfig, query uri_query: Bool) -> Model {
   let user = init_default_user()
   Model(
-    config: Config(storage:, uri_query:),
+    config: Config(storage:, uri_query:, debug: False),
     back_view: [],
     current_view: AddPayment,
     user:,
@@ -210,6 +211,16 @@ pub fn add_view_to_back_stack(
 
 // --- DEBUG/DEVELOPMENT ---
 
+/// Initialises the application in debug mode.
+///
+pub fn init_with_debug(
+  storage storage: StorageConfig,
+  query uri_query: Bool,
+) -> Model {
+  let base_model = init(storage:, query: uri_query)
+  Model(..base_model, config: Config(..base_model.config, debug: True))
+}
+
 /// Initialises the application with example payment data for development.
 ///
 pub fn init_with_example_payments() -> Model {
@@ -243,7 +254,7 @@ pub fn init_with_example_payments() -> Model {
   }
 
   Model(
-    config: Config(storage:, uri_query:),
+    config: Config(storage:, uri_query:, debug: False),
     back_view: [],
     current_view:,
     user:,

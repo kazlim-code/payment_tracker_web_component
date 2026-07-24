@@ -1,4 +1,3 @@
-import plinth/javascript/global
 import core/payment_tracker/internal/sort
 import core/payment_tracker/internal/utils
 import core/payment_tracker/monthly_payment
@@ -16,10 +15,11 @@ import gleam/string
 import lustre
 import lustre/component
 import lustre/effect.{type Effect}
+import plinth/javascript/global
 import tempo/instant
 import ui/state.{
   type Model, type Msg, AddPayment, AutomatedBankTransfer, HomeLoan,
-  MonthlyDetail, MonthlySummary, NoDialog, ParentUpdatedDemo,
+  MonthlyDetail, MonthlySummary, NoDialog, ParentUpdatedDebug, ParentUpdatedDemo,
   ParentUpdatedStorageBackend, PaymentData, StorageUpdatedUser,
   UserBlurredAmount, UserChangedPaymentDate, UserChangedSearchQuery,
   UserClearedSearchQuery, UserClearedSuccessFeedback, UserClickedAddMonthPayment,
@@ -35,10 +35,14 @@ import ui/storage/factory as storage_factory
 import ui/view
 
 const step_amount: Float = 0.01
+
 const success_feedback_delay_ms: Int = 2500
 
 // --- Component API ---
 
+/// Registers the lustre component while handling element changes specific to
+/// only the storage backend being used.
+///
 pub fn register() -> lustre.App(Nil, Model, Msg) {
   lustre.component(init, update, view.view, [
     component.on_attribute_change("storage-backend", fn(value) {
@@ -47,8 +51,14 @@ pub fn register() -> lustre.App(Nil, Model, Msg) {
   ])
 }
 
+/// Registers the lustre component while handling any core attribute changes on
+/// the custom element.
+///
 pub fn register_using_uri_query() -> lustre.App(Nil, Model, Msg) {
   lustre.component(init_with_flags(uri_query: True), update, view.view, [
+    component.on_attribute_change("debug", fn(value) {
+      Ok(ParentUpdatedDebug(value))
+    }),
     component.on_attribute_change("demo", fn(value) {
       Ok(ParentUpdatedDemo(value))
     }),
@@ -75,7 +85,18 @@ pub fn init_with_flags(
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    // -- Storage ---
+    // -- Debug ---
+    ParentUpdatedDebug(debug) -> {
+      let is_debug = debug |> string.lowercase
+      let debug = case is_debug {
+        "true" -> True
+        _ -> False
+      }
+      let config = state.Config(..model.config, debug:)
+      let model = state.Model(..model, config:)
+      #(model, effect.none())
+    }
+    // -- Demo ---
     ParentUpdatedDemo(demo) -> {
       let is_demo = demo |> string.lowercase
       case is_demo {
@@ -87,21 +108,21 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           ),
           effect.none(),
         )
-        // _ -> #(state.init(storage.LocalStorage), effect.none())
       }
     }
+    // -- Storage ---
     ParentUpdatedStorageBackend(backend) -> {
       let storage = case backend {
         "indexeddb" -> {
           let attrs = do_get_attributes()
           decode.run(attrs, decode.at(["db-name"], decode.string))
-          |> result.map(storage.IndexedDB)
+          |> result.map(with: storage.IndexedDB)
           |> result.unwrap(storage.IndexedDB("payment-tracker-db"))
         }
         "sqlite" -> {
           let attrs = do_get_attributes()
           decode.run(attrs, decode.at(["db-name"], decode.string))
-          |> result.map(storage.SQLite)
+          |> result.map(with: storage.SQLite)
           |> result.unwrap(storage.SQLite("payment-tracker.db"))
         }
         _ -> storage.LocalStorage

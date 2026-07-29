@@ -277,3 +277,58 @@ pub fn no_payments() -> Element(msg) {
     ],
   )
 }
+
+/// Renders an eye open icon, typically used for 'visibility' actions.
+///
+pub fn eye_open() -> Element(msg) {
+  svg.svg(
+    [
+      attribute.attribute("viewBox", "0 0 24 20"),
+      attribute.attribute("width", "16"),
+      attribute.attribute("height", "16"),
+      attribute.attribute("fill", "none"),
+      attribute.attribute("stroke", "currentColor"),
+      attribute.attribute("stroke-width", "2"),
+      attribute.attribute("stroke-linecap", "round"),
+      attribute.attribute("stroke-linejoin", "round"),
+    ],
+    [
+      svg.path([
+        attribute.attribute("d", "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"),
+      ]),
+      svg.circle([
+        attribute.attribute("cx", "12"),
+        attribute.attribute("cy", "12"),
+        attribute.attribute("r", "3"),
+      ]),
+    ],
+  )
+}
+
+/// Renders an eye closed icon, typically used for 'hiding visibility' actions.
+///
+pub fn eye_closed() -> Element(msg) {
+  svg.svg(
+    [
+      attribute.attribute("viewBox", "0 0 24 20"),
+      attribute.attribute("width", "16"),
+      attribute.attribute("height", "16"),
+      attribute.attribute("fill", "none"),
+      attribute.attribute("stroke", "currentColor"),
+      attribute.attribute("stroke-width", "2"),
+      attribute.attribute("stroke-linecap", "round"),
+      attribute.attribute("stroke-linejoin", "round"),
+    ],
+    [
+      svg.path([
+        attribute.attribute(
+          "d",
+          "M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24",
+        ),
+      ]),
+      svg.path([
+        attribute.attribute("d", "M1 1l22 22"),
+      ]),
+    ],
+  )
+}

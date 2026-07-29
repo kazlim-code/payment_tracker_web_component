@@ -1283,17 +1283,28 @@ pub fn base() -> Element(msg) {
     }
 
     .debug-container {
-      position: relative;
+      margin-inline: auto;
+      margin-top: var(--gap-xl);
       min-height: var(--debug-pre-min-height);
       max-width: var(--add-payment-view-max-width);
       min-width: auto;
-      margin-inline: auto;
-      margin-top: var(--gap-xl);
+      opacity: 1;
       padding: var(--gap-md);
+      position: relative;
+      transition: opacity 0.2s ease;
+      transition-behavior: allow-discrete;
       width: 100%;
 
       @container add-payment (width > 45rem) {
         width: max(45rem, 80cqi);
+      }
+
+      @starting-style {
+        opacity: 0;
+      }
+
+      &.hide {
+        opacity: 0;
       }
     }
 

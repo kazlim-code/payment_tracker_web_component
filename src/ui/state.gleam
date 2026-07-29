@@ -5,7 +5,7 @@ import core/payment_tracker/internal/sort
 import core/payment_tracker/monthly_payment.{type MonthlyPayment}
 import core/payment_tracker/payment.{type Payment}
 import core/payment_tracker/user.{type User}
-import core/storage.{type Response, type StorageConfig, LocalStorage}
+import core/storage.{type Response, type StorageConfig}
 import formal/form.{type Form}
 import gleam/option.{type Option, None, Some}
 import lustre/attribute
@@ -66,6 +66,8 @@ pub type Model {
     // View
     back_view: List(View),
     current_view: View,
+    debug_transition: Bool,
+    debug_view: Bool,
     // User
     user: User,
     // Dialog State
@@ -89,6 +91,7 @@ pub type Model {
 /// Messages that can be sent to the update function to change the state.
 ///
 pub type Msg {
+  DebugTransitionEnd(String)
   ParentUpdatedDebug(String)
   ParentUpdatedDemo(String)
   ParentUpdatedStorageBackend(String)
@@ -104,6 +107,7 @@ pub type Msg {
   UserClickedEditPayment(Dialog)
   UserClickedEditTransferAmount(Dialog)
   UserClickedMonthlyView
+  UserClickedToggleDebug
   UserClosedDialog
   UserDecrementedAmount
   UserDeletedPayment(Payment)
@@ -133,6 +137,8 @@ pub fn init(storage storage: StorageConfig, query uri_query: Bool) -> Model {
     config: Config(storage:, uri_query:, debug: False),
     back_view: [],
     current_view: AddPayment,
+    debug_transition: False,
+    debug_view: False,
     user:,
     dialog: NoDialog,
     form_name: "",
@@ -165,8 +171,49 @@ pub fn init(storage storage: StorageConfig, query uri_query: Bool) -> Model {
   )
 }
 
+/// Initialises the application in debug mode.
+///
+pub fn init_with_debug(model: Model) -> Model {
+  Model(..model, config: Config(..model.config, debug: True), debug_view: True)
+}
+
+/// Initialises the application with example payment data for development.
+///
+pub fn init_with_example_payments(model: Model) -> Model {
+  let payments = [
+    payment.new(name: "Test payment 1")
+      |> payment.with_amount(15.0)
+      |> payment.with_payment_date(Some(tempo_date.current_local())),
+    payment.new(name: "Test payment 2")
+      |> payment.with_amount(30.0)
+      |> payment.with_payment_date(Some(tempo_date.current_local())),
+  ]
+  let user =
+    init_default_user()
+    |> user.with_payments(payments)
+    |> user.sync_monthly_payments
+    |> user.sync_month_payment_totals
+
+  let month_year = tempo_date.current_local() |> tempo_date.get_month_year
+  let monthly_payment_result = user |> user.get_monthly_payment(month_year)
+  let #(current_view, user) = case monthly_payment_result {
+    Ok(monthly_payment) -> {
+      let mp =
+        monthly_payment
+        |> monthly_payment.with_home_loan_transfer(with: Some(2500.0))
+      let user = user |> user.update_monthly_payment(with: mp)
+      #(MonthlyDetail(mp), user)
+    }
+    Error(_) -> #(AddPayment, user)
+  }
+
+  Model(..model, current_view:, user:)
+}
+
+/// Creates a default user for test environments.
+///
 fn init_default_user() -> User {
-  user.new("Callum", "Kazlim")
+  user.new("John Doe", "TestAccount")
 }
 
 /// Parses a date string into a Date object for use in forms.
@@ -209,82 +256,10 @@ pub fn add_view_to_back_stack(
   }
 }
 
-// --- DEBUG/DEVELOPMENT ---
-
-/// Initialises the application in debug mode.
+/// Updates the debug transition show/hide state.
 ///
-pub fn init_with_debug(
-  storage storage: StorageConfig,
-  query uri_query: Bool,
-) -> Model {
-  let base_model = init(storage:, query: uri_query)
-  Model(..base_model, config: Config(..base_model.config, debug: True))
-}
-
-/// Initialises the application with example payment data for development.
-///
-pub fn init_with_example_payments() -> Model {
-  let storage = LocalStorage
-  let uri_query = True
-  let payments = [
-    payment.new(name: "Test payment 1")
-      |> payment.with_amount(15.0)
-      |> payment.with_payment_date(Some(tempo_date.current_local())),
-    payment.new(name: "Test payment 2")
-      |> payment.with_amount(30.0)
-      |> payment.with_payment_date(Some(tempo_date.current_local())),
-  ]
-  let user =
-    init_default_user()
-    |> user.with_payments(payments)
-    |> user.sync_monthly_payments
-    |> user.sync_month_payment_totals
-
-  let month_year = tempo_date.current_local() |> tempo_date.get_month_year
-  let monthly_payment_result = user |> user.get_monthly_payment(month_year)
-  let #(current_view, user) = case monthly_payment_result {
-    Ok(monthly_payment) -> {
-      let mp =
-        monthly_payment
-        |> monthly_payment.with_home_loan_transfer(with: Some(2500.0))
-      let user = user |> user.update_monthly_payment(with: mp)
-      #(MonthlyDetail(mp), user)
-    }
-    Error(_) -> #(AddPayment, user)
-  }
-
-  Model(
-    config: Config(storage:, uri_query:, debug: False),
-    back_view: [],
-    current_view:,
-    user:,
-    dialog: NoDialog,
-    form_name: "",
-    form_amount: 0.0,
-    form_category: "",
-    form_date: "",
-    form_shared_toggle: False,
-    form_today_toggle: True,
-    form_success_count: 0,
-    payment_data: form.new({
-      use name <- form.field(
-        "payment-name",
-        form.parse_string |> form.check_not_empty,
-      )
-      use amount <- form.field(
-        "payment-amount",
-        form.parse_float |> form.check_float_more_than(0.0),
-      )
-      use category <- form.field(
-        "payment-category",
-        form.parse_optional(form.parse_string),
-      )
-      use date <- form.field("payment-date", parse_date())
-
-      form.success(PaymentData(name:, amount:, category:, date:, shared: False))
-    }),
-    detail_search_query: "",
-    detail_sort_by: sort.Date,
-    detail_sort_direction: sort.Desc,
-  )
+pub fn toggle_debug_transition(model: Model) -> Model {
+  let debug_view = !model.debug_view
+  let debug_transition = True
+  Model(..model, debug_transition:, debug_view:)
 }

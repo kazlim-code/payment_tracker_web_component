@@ -3,7 +3,7 @@ import core/payment_tracker/internal/utils
 import core/payment_tracker/monthly_payment
 import core/payment_tracker/payment
 import core/payment_tracker/user
-import core/storage.{LoadUser, SaveUser, UserLoaded, UserSaved}
+import core/storage.{LoadUser, LocalStorage, SaveUser, UserLoaded, UserSaved}
 import formal/form
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -18,16 +18,17 @@ import lustre/effect.{type Effect}
 import plinth/javascript/global
 import tempo/instant
 import ui/state.{
-  type Model, type Msg, AddPayment, AutomatedBankTransfer, HomeLoan,
-  MonthlyDetail, MonthlySummary, NoDialog, ParentUpdatedDebug, ParentUpdatedDemo,
-  ParentUpdatedStorageBackend, PaymentData, StorageUpdatedUser,
-  UserBlurredAmount, UserChangedPaymentDate, UserChangedSearchQuery,
-  UserClearedSearchQuery, UserClearedSuccessFeedback, UserClickedAddMonthPayment,
-  UserClickedAddPayment, UserClickedBack, UserClickedDetailedMonthView,
-  UserClickedEditHomeLoanAmount, UserClickedEditPayment,
-  UserClickedEditTransferAmount, UserClickedMonthlyView, UserClickedSortColumn,
-  UserClosedDialog, UserDecrementedAmount, UserDeletedPayment,
-  UserIncrementedAmount, UserInputPaymentName, UserSubmittedEditMonthlyBalance,
+  type Model, type Msg, AddPayment, AutomatedBankTransfer, DebugTransitionEnd,
+  HomeLoan, MonthlyDetail, MonthlySummary, NoDialog, ParentUpdatedDebug,
+  ParentUpdatedDemo, ParentUpdatedStorageBackend, PaymentData,
+  StorageUpdatedUser, UserBlurredAmount, UserChangedPaymentDate,
+  UserChangedSearchQuery, UserClearedSearchQuery, UserClearedSuccessFeedback,
+  UserClickedAddMonthPayment, UserClickedAddPayment, UserClickedBack,
+  UserClickedDetailedMonthView, UserClickedEditHomeLoanAmount,
+  UserClickedEditPayment, UserClickedEditTransferAmount, UserClickedMonthlyView,
+  UserClickedSortColumn, UserClickedToggleDebug, UserClosedDialog,
+  UserDecrementedAmount, UserDeletedPayment, UserIncrementedAmount,
+  UserInputPaymentName, UserSubmittedEditMonthlyBalance,
   UserSubmittedEditPayment, UserSubmittedPayment, UserToggledMonthlyPaymentPaid,
   UserToggledShared, UserToggledSharedPayment, UserToggledToday,
 }
@@ -55,17 +56,22 @@ pub fn register() -> lustre.App(Nil, Model, Msg) {
 /// the custom element.
 ///
 pub fn register_using_uri_query() -> lustre.App(Nil, Model, Msg) {
-  lustre.component(init_with_flags(uri_query: True), update, view.view, [
-    component.on_attribute_change("debug", fn(value) {
-      Ok(ParentUpdatedDebug(value))
-    }),
-    component.on_attribute_change("demo", fn(value) {
-      Ok(ParentUpdatedDemo(value))
-    }),
-    component.on_attribute_change("storage-backend", fn(value) {
-      Ok(ParentUpdatedStorageBackend(value))
-    }),
-  ])
+  lustre.component(
+    init(Nil) |> init_with_flags(uri_query: True),
+    update,
+    view.view,
+    [
+      component.on_attribute_change("debug", fn(value) {
+        Ok(ParentUpdatedDebug(value))
+      }),
+      component.on_attribute_change("demo", fn(value) {
+        Ok(ParentUpdatedDemo(value))
+      }),
+      component.on_attribute_change("storage-backend", fn(value) {
+        Ok(ParentUpdatedStorageBackend(value))
+      }),
+    ],
+  )
 }
 
 fn init(_: Nil) -> #(Model, Effect(state.Msg)) {
@@ -73,14 +79,12 @@ fn init(_: Nil) -> #(Model, Effect(state.Msg)) {
 }
 
 pub fn init_with_flags(
+  init_state init_state: #(Model, Effect(state.Msg)),
   uri_query uri_query: Bool,
 ) -> fn(Nil) -> #(Model, Effect(state.Msg)) {
-  fn(_: Nil) {
-    #(
-      state.init(storage: storage.LocalStorage, query: uri_query),
-      effect.none(),
-    )
-  }
+  let model = init_state.0
+  let config = state.Config(..model.config, uri_query: uri_query)
+  fn(_: Nil) { #(state.Model(..model, config:), init_state.1) }
 }
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
@@ -88,19 +92,34 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     // -- Debug ---
     ParentUpdatedDebug(debug) -> {
       let is_debug = debug |> string.lowercase
-      let debug = case is_debug {
-        "true" -> True
-        _ -> False
+      let model = case is_debug {
+        "true" -> model |> state.init_with_debug
+        _ -> model
       }
-      let config = state.Config(..model.config, debug:)
-      let model = state.Model(..model, config:)
       #(model, effect.none())
+    }
+    UserClickedToggleDebug -> {
+      let model = model |> state.toggle_debug_transition
+      #(model, effect.none())
+    }
+    DebugTransitionEnd(_property) -> {
+      case model.debug_transition, model.debug_view {
+        True, False -> {
+          let model = state.Model(..model, debug_transition: False)
+          #(model, effect.none())
+        }
+        _, _ -> #(model, effect.none())
+      }
     }
     // -- Demo ---
     ParentUpdatedDemo(demo) -> {
       let is_demo = demo |> string.lowercase
       case is_demo {
-        "true" -> #(state.init_with_example_payments(), effect.none())
+        "true" -> #(
+          state.init(storage: LocalStorage, query: True)
+            |> state.init_with_example_payments(),
+          effect.none(),
+        )
         _ -> #(
           state.init(
             storage: storage.LocalStorage,

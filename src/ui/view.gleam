@@ -25,12 +25,13 @@ import tempo/date
 import tempo/instant
 import ui/state.{
   type Dialog, type Model, type MonthlyBalance, AddPayment,
-  AutomatedBankTransfer, Dialog, HomeLoan, MonthlyDetail, MonthlySummary,
-  NoDialog, UserBlurredAmount, UserChangedPaymentDate, UserChangedSearchQuery,
-  UserClearedSearchQuery, UserClickedAddMonthPayment, UserClickedAddPayment,
-  UserClickedBack, UserClickedDetailedMonthView, UserClickedEditHomeLoanAmount,
-  UserClickedEditPayment, UserClickedEditTransferAmount, UserClickedMonthlyView,
-  UserClickedSortColumn, UserClosedDialog, UserDecrementedAmount,
+  AutomatedBankTransfer, DebugTransitionEnd, Dialog, HomeLoan, MonthlyDetail,
+  MonthlySummary, NoDialog, UserBlurredAmount, UserChangedPaymentDate,
+  UserChangedSearchQuery, UserClearedSearchQuery, UserClickedAddMonthPayment,
+  UserClickedAddPayment, UserClickedBack, UserClickedDetailedMonthView,
+  UserClickedEditHomeLoanAmount, UserClickedEditPayment,
+  UserClickedEditTransferAmount, UserClickedMonthlyView, UserClickedSortColumn,
+  UserClickedToggleDebug, UserClosedDialog, UserDecrementedAmount,
   UserDeletedPayment, UserIncrementedAmount, UserInputPaymentName,
   UserSubmittedEditMonthlyBalance, UserSubmittedEditPayment,
   UserSubmittedPayment, UserToggledMonthlyPaymentPaid, UserToggledShared,
@@ -66,9 +67,9 @@ fn add_payment_view(model: Model) -> Element(state.Msg) {
     header_view(model),
     html.main([], [
       add_payment_form(with: model),
-      case model.config.debug {
-        True -> devtools_panel(model)
-        False -> element.none()
+      case model.debug_transition, model.debug_view {
+        False, False -> element.none()
+        _, _ -> devtools_panel(model)
       },
     ]),
   ])
@@ -268,7 +269,11 @@ pub fn devtools_panel(model: Model) -> Element(state.Msg) {
   let payments_string = user.payments_to_string(model.user)
   html.div(
     [
-      attribute.class("debug-container"),
+      attribute.classes([
+        #("debug-container", True),
+        #("hide", !model.debug_view),
+      ]),
+      on_transitionend(DebugTransitionEnd),
     ],
     [
       html.div(
@@ -1357,16 +1362,18 @@ fn header_view(model: Model) -> Element(state.Msg) {
       },
       case model.current_view {
         AddPayment ->
-          html.button(
-            [
-              attribute.class("btn-ghost primary text-label-caps gap-xs"),
-              event.on_click(UserClickedMonthlyView),
-            ],
-            [
-              ui_svg.calendar(),
-              html.text("Monthly view"),
-            ],
-          )
+          html.div([attribute.class("flex gap-sm")], [
+            html.button(
+              [
+                attribute.class("btn-ghost primary text-label-caps gap-xs"),
+                event.on_click(UserClickedMonthlyView),
+              ],
+              [
+                ui_svg.calendar(),
+                html.text("Monthly view"),
+              ],
+            ),
+          ])
         MonthlySummary ->
           case model.back_view {
             [] -> back_button(UserClickedAddPayment)
@@ -1404,7 +1411,37 @@ fn header_view(model: Model) -> Element(state.Msg) {
 /// NOTE: Keyboard navigation logic and associated tests are currently
 /// incomplete and not yet implemented.
 ///
-fn footer_view(_model: Model) -> Element(msg) {
+fn footer_view(model: Model) -> Element(state.Msg) {
+  let debug = case model.config.debug {
+    True -> {
+      let debug_svg = case model.debug_view {
+        True -> ui_svg.eye_open
+        False -> ui_svg.eye_closed
+      }
+      html.button(
+        [
+          attribute.class("btn-ghost primary text-label-caps gap-sm"),
+          event.on_click(UserClickedToggleDebug),
+        ],
+        [
+          html.span(
+            [
+              attribute.class(""),
+            ],
+            [debug_svg()],
+          ),
+          html.span(
+            [
+              attribute.class("text-label-caps"),
+            ],
+            [html.text("Debug")],
+          ),
+        ],
+      )
+    }
+    False -> element.none()
+  }
+
   html.footer([attribute.class("vim-footer")], [
     html.div([attribute.class("flex justify-between w-full")], [
       html.div([attribute.class("flex items-center gap-md")], [
@@ -1414,9 +1451,17 @@ fn footer_view(_model: Model) -> Element(msg) {
         hint("[/]", "Search"),
         hint("[esc]", "Summary"),
       ]),
-      html.div([attribute.class("text-label-caps opacity-50")], [
-        html.text("v" <> version.string),
-      ]),
+      html.div(
+        [
+          attribute.class("flex items-center gap-md"),
+        ],
+        [
+          debug,
+          html.div([attribute.class("text-label-caps opacity-50")], [
+            html.text("v" <> version.string),
+          ]),
+        ],
+      ),
     ]),
   ])
 }
@@ -1486,6 +1531,16 @@ pub fn on_blur_with_value(
     use value <- decode.subfield(["target", "value"], decode.string)
     decode.success(message(value))
   })
+}
+
+/// A custom event handler for transitionend events.
+///
+pub fn on_transitionend(to_msg: fn(String) -> message) -> Attribute(message) {
+  let decoder = {
+    use property_name <- decode.field("propertyName", decode.string)
+    decode.success(to_msg(property_name))
+  }
+  event.on("transitionend", decoder)
 }
 
 /// A custom event handler for submit events that decodes the target's form data

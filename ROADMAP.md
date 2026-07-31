@@ -35,7 +35,7 @@ This document tracks the current status of features, planned improvements, and t
 - [x] Filter Month detail view table by name via search input
 
 ### 🔄 View Transitions & Modern CSS
-- [ ] Update hex code colours to oklab hsla or whatever modern practices are used.
+- [x] Update hex code colours to oklab hsla or whatever modern practices are used.
 - [ ] Implement the **View Transitions API** for seamless navigation between views.
 - [ ] **Hero Transition:** Transition the "Add Payment" input box to the header/center when switching to the Monthly Summary view, and back.
 - [ ] Explore further use of modern CSS (Container Queries, Scroll Snap).

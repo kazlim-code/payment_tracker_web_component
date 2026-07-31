@@ -262,6 +262,35 @@ fn calendar_picker(
 
 // --- Devtools ---
 
+fn devtools_toggle_button(model: Model) -> Element(state.Msg) {
+  case model.config.debug {
+    True -> {
+      let debug_svg = case model.debug_view {
+        True -> ui_svg.eye_open
+        False -> ui_svg.eye_closed
+      }
+      html.button(
+        [
+          attribute.class("btn-ghost primary text-label-caps gap-sm"),
+          attribute.aria_expanded(model.debug_view),
+          attribute.aria_controls("debug-panel"),
+          event.on_click(UserClickedToggleDebug),
+        ],
+        [
+          html.span([], [debug_svg()]),
+          html.span(
+            [
+              attribute.class("text-label-caps"),
+            ],
+            [html.text("Debug")],
+          ),
+        ],
+      )
+    }
+    False -> element.none()
+  }
+}
+
 /// A debug utility that renders the current raw state of payments in
 /// the user model.
 ///
@@ -273,6 +302,7 @@ pub fn devtools_panel(model: Model) -> Element(state.Msg) {
         #("debug-container", True),
         #("hide", !model.debug_view),
       ]),
+      attribute.id("debug-panel"),
       on_transitionend(DebugTransitionEnd),
     ],
     [
@@ -1412,36 +1442,6 @@ fn header_view(model: Model) -> Element(state.Msg) {
 /// incomplete and not yet implemented.
 ///
 fn footer_view(model: Model) -> Element(state.Msg) {
-  let debug = case model.config.debug {
-    True -> {
-      let debug_svg = case model.debug_view {
-        True -> ui_svg.eye_open
-        False -> ui_svg.eye_closed
-      }
-      html.button(
-        [
-          attribute.class("btn-ghost primary text-label-caps gap-sm"),
-          event.on_click(UserClickedToggleDebug),
-        ],
-        [
-          html.span(
-            [
-              attribute.class(""),
-            ],
-            [debug_svg()],
-          ),
-          html.span(
-            [
-              attribute.class("text-label-caps"),
-            ],
-            [html.text("Debug")],
-          ),
-        ],
-      )
-    }
-    False -> element.none()
-  }
-
   html.footer([attribute.class("vim-footer")], [
     html.div([attribute.class("flex justify-between w-full")], [
       html.div([attribute.class("flex items-center gap-md")], [
@@ -1456,7 +1456,7 @@ fn footer_view(model: Model) -> Element(state.Msg) {
           attribute.class("flex items-center gap-md"),
         ],
         [
-          debug,
+          devtools_toggle_button(model),
           html.div([attribute.class("text-label-caps opacity-50")], [
             html.text("v" <> version.string),
           ]),

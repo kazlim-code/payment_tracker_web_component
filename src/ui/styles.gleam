@@ -11,36 +11,58 @@ pub fn base() -> Element(msg) {
     [],
     "
     :host {
-      --primary: #f97316;
+      --primary: #f97316;               /* Fallback */
+      --primary: oklch(67.5% 0.18 45);  /* OKLCH override */
       --on-primary: #000000;
+      --on-primary: oklch(0% 0 0);
       --primary-container: #f97316;
+      --primary-container: oklch(67.75% 0.17 40.5);
       --on-primary-container: #000000;
+      --on-primary-container: oklch(0% 0 0);
 
       --background: #0b1326;
+      --background: oklch(19% 0.038 262);
       --on-background: #dae2fd;
+      --on-background: oklch(90% 0.038 262);
 
       --surface: #0b1326;
+      --surface: oklch(19% 0.038 262);
       --on-surface: #dae2fd;
+      --on-surface: oklch(90% 0.038 262);
       --on-surface-level-1: color-mix(in srgb, var(--on-surface), black 30%);
       --surface-variant: #2d3449;
+      --surface-variant: oklch(35% 0.04 260);
       --surface-variant-dark: #131b2e;
+      --surface-variant-dark: oklch(22% 0.038 262);
       --on-surface-variant-dark: color-mix(in srgb, var(--on-surface), black 20%);
       --surface-container-high: #222a3d;
+      --surface-container-high: oklch(30% 0.038 262);
       --surface-container-low: #131b2e;
+      --surface-container-low: oklch(22.5% 0.038 262);
       --surface-container-lowest: #060e20;
+      --surface-container-lowest: oklch(17% 0.038 262);
       --on-surface-variant: #e0c0b1;
+      --on-surface-variant: oklch(80% 0.05 45);
 
       --level-0: #020617;
+      --level-0: oklch(13% 0.015 259);
       --level-1: #0f172a;
+      --level-1: oklch(20.7% 0.038 262);
       --level-2: #1e293b;
+      --level-2: oklch(28.4% 0.038 262);
 
       --border-neutral: #1e293b;
+      --border-neutral: oklch(28.4% 0.038 262);
       --border-subtle: #334155;
+      --border-subtle: oklch(39% 0.038 262);
 
       --success: #51d995;
+      --success: oklch(80% 0.15 150);
 
       --status-paid: #81c995;
+      --status-paid: oklch(78% 0.11 150);
       --status-owed: #f28b82;
+      --status-owed: oklch(72% 0.12 25);
 
       --font-family: 'Space Grotesk', sans-serif;
       --font-light: 300;

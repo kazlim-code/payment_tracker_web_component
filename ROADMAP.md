@@ -52,6 +52,7 @@ This document tracks the current status of features, planned improvements, and t
 - [x] **Prioritized Coverage:** Implement robust unit and integration tests.
 - [x] Recover/Adapt tests from the predecessor project.
 - [x] Add tests for core financial calculations and state transitions.
+- [ ] Explore to see if ffi functions can be unit tested?
 
 ## 🛠 Technical Debt & Internal
 - [x] Update core payment and UI `.gleam` files with documentation for the modules and functions.

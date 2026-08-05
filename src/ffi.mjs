@@ -226,3 +226,18 @@ export function get_attributes() {
   }
   return attrs;
 }
+
+// View Transitions API
+
+export function startViewTransition(updateDom, direction) {
+  // Ensure feature exists
+  if (!document.startViewTransition) {
+    updateDom();
+    return;
+  }
+
+  document.startViewTransition({
+    update: updateDom,
+    types: [direction] // e.g., 'forward' or 'backward'
+  });
+}

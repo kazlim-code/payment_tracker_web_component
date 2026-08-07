@@ -9,3 +9,33 @@ html {
 body {
   margin: 0;
 }
+
+/* Animation styles for forward type only */
+/*html:active-view-transition-type {
+  :root {
+    view-transition-name: none;
+  }
+}
+
+  html:active-view-transition-type(forward) {
+    &::view-transition-old(content) {
+      animation: slide-left-scale-down 4s ease-out both;
+    }
+    &::view-transition-new(content) {
+      animation: slide-right-in 4s ease-out both;
+    }
+  }
+
+  @keyframes slide-left-scale-down {
+    to { transform: translateX(-30%) scale(0.95); opacity: 0; }
+  }
+  @keyframes slide-right-in {
+    from { transform: translateX(100%); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
+    }
+  }*/

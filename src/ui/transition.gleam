@@ -4,8 +4,17 @@ pub type TransitionType {
   None
 }
 
+/// Starts a View Transition for a given transition type via the
+/// startViewTransition FFI.
+///
+pub fn start(update_dom: fn() -> Nil, direction: TransitionType) -> Nil {
+  let dir_str = case direction {
+    Forward -> "forward"
+    Backward -> "backward"
+    None -> "none"
+  }
+  do_start_transition(update_dom, dir_str)
+}
+
 @external(javascript, "../ffi.mjs", "startViewTransition")
-pub fn start_transition(
-  update_dom: fn() -> Nil,
-  direction: TransitionType,
-) -> Nil
+fn do_start_transition(update_dom: fn() -> Nil, direction: String) -> Nil

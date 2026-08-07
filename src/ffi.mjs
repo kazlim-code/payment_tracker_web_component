@@ -229,6 +229,98 @@ export function get_attributes() {
 
 // View Transitions API
 
+// Apply global styles for the payment tracker and enable view transitions api
+const transitionStyles = document.createElement("style");
+transitionStyles.textContent = `
+  /* Disable root transition completely so we don't get the default UA fade */
+  :root {
+    --content-view-transition-time: 0.25s;
+    view-transition-name: none;
+  }
+
+  /* Expose the inner main element to the document-level view transition */
+  payment-tracker::part(content) {
+    view-transition-name: content;
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  /* Fallback: if browser doesn't support transition types, default to forward */
+
+  /* Animation styles for forward type */
+  html:active-view-transition-type(forward) {
+    &::view-transition-old(content) {
+      animation: slide-left-out var(--content-view-transition-time) ease-out both;
+    }
+    &::view-transition-new(content) {
+      animation: scale-up var(--content-view-transition-time) ease-out both calc(var(--content-view-transition-time) / 4);
+    }
+  }
+
+  /* Example Backward animation (reverse) */
+  html:active-view-transition-type(backward) {
+    &::view-transition-old(content) {
+      animation: scale-up var(--content-view-transition-time) ease-out both reverse;
+    }
+    &::view-transition-new(content) {
+      animation: slide-right-in var(--content-view-transition-time) ease-out both calc(var(--content-view-transition-time) / 2);
+    }
+  }
+
+  @keyframes scale-up {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes slide-left-out {
+    0% {
+      opacity: 1;
+    }
+    10% {
+      opacity: 0.9;
+    }
+    45% {
+      opacity: 0.1;
+    }
+    100% {
+      transform: translateX(-45%);
+      opacity: 0;
+    }
+  }
+  @keyframes slide-right-in {
+    0% {
+      transform: translateX(-45%);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.1;
+    }
+    45% {
+      opacity: 0.9;
+    }
+    100% {
+    transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
+    }
+  }
+`;
+if (typeof document !== "undefined") {
+  document.head.appendChild(transitionStyles);
+}
+
 export function startViewTransition(updateDom, direction) {
   // Ensure feature exists
   if (!document.startViewTransition) {
@@ -236,8 +328,13 @@ export function startViewTransition(updateDom, direction) {
     return;
   }
 
-  document.startViewTransition({
+  // Passing types dynamically requires the direction string
+  const transition = document.startViewTransition({
     update: updateDom,
-    types: [direction] // e.g., 'forward' or 'backward'
+    types: direction !== "none" ? [direction] : []
+  });
+
+  transition.ready.catch((e) => {
+    console.error("❌ View transition failed to start:", e);
   });
 }

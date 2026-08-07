@@ -9,7 +9,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/float
 import gleam/io
-import gleam/option.{None, Some}
+import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import lustre
@@ -31,8 +31,11 @@ import ui/state.{
   UserInputPaymentName, UserSubmittedEditMonthlyBalance,
   UserSubmittedEditPayment, UserSubmittedPayment, UserToggledMonthlyPaymentPaid,
   UserToggledShared, UserToggledSharedPayment, UserToggledToday,
+  ViewTransitionedToAddMonthPayment, ViewTransitionedToAddPayment,
+  ViewTransitionedToMonthlyDetail, ViewTransitionedToMonthlySummary,
 }
 import ui/storage/factory as storage_factory
+import ui/transition
 import ui/view
 
 const step_amount: Float = 0.01
@@ -165,66 +168,96 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     StorageUpdatedUser(UserSaved(_)) -> #(model, effect.none())
 
     // -- Changing Views ---
-    UserClickedAddMonthPayment(date) -> #(
-      state.Model(
-        ..model,
-        current_view: AddPayment,
-        back_view: state.add_view_to_back_stack(
-          add: model.current_view,
-          stack: model.back_view,
-        ),
-        form_date: date,
-        form_today_toggle: False,
-      ),
-      effect.none(),
-    )
-    UserClickedAddPayment -> #(
-      state.Model(..model, current_view: AddPayment, back_view: []),
-      effect.none(),
-    )
-    UserClickedDetailedMonthView(month_year) -> {
+    ViewTransitionedToAddMonthPayment(navigation_direction, date) -> {
+      let back_view =
+        model |> state.update_back_stack(direction: navigation_direction)
+      let model =
+        state.Model(
+          ..model,
+          current_view: AddPayment,
+          back_view:,
+          form_date: date,
+          form_today_toggle: False,
+        )
+      #(model, effect.none())
+    }
+    ViewTransitionedToAddPayment(navigation_direction) -> {
+      let back_view =
+        model |> state.update_back_stack(direction: navigation_direction)
+      let model = state.Model(..model, current_view: AddPayment, back_view:)
+      #(model, effect.none())
+    }
+    ViewTransitionedToMonthlySummary(navigation_direction) -> {
+      let back_view =
+        model |> state.update_back_stack(direction: navigation_direction)
+      let model = state.Model(..model, current_view: MonthlySummary, back_view:)
+      #(model, effect.none())
+    }
+    ViewTransitionedToMonthlyDetail(navigation_direction, month_year) -> {
+      let back_view =
+        model |> state.update_back_stack(direction: navigation_direction)
       let monthly_payment =
         user.get_monthly_payment(from: model.user, for: month_year)
       case monthly_payment {
         Ok(mp) -> #(
-          state.Model(
-            ..model,
-            current_view: MonthlyDetail(mp),
-            back_view: state.add_view_to_back_stack(
-              add: model.current_view,
-              stack: model.back_view,
-            ),
-          ),
+          state.Model(..model, current_view: MonthlyDetail(mp), back_view:),
           effect.none(),
         )
         Error(_) -> #(model, effect.none())
       }
     }
-    UserClickedBack -> #(
-      case model.back_view {
-        [] -> model
-        [previous_view] ->
-          state.Model(..model, current_view: previous_view, back_view: [])
-        [previous_view, ..rest] ->
-          state.Model(..model, current_view: previous_view, back_view: rest)
-      },
-      effect.none(),
+
+    // -- User actions ---
+    UserClickedAddMonthPayment(date) -> #(
+      model,
+      trigger_transition(
+        using: ViewTransitionedToAddMonthPayment(state.ForwardNavigation, date),
+        direction: transition.Backward,
+      ),
     )
-    UserClickedMonthlyView -> {
-      case model.current_view {
-        MonthlySummary -> #(model, effect.none())
-        _ -> #(
-          state.Model(
-            ..model,
-            current_view: MonthlySummary,
-            back_view: state.add_view_to_back_stack(
-              add: model.current_view,
-              stack: model.back_view,
-            ),
-          ),
-          effect.none(),
-        )
+    UserClickedAddPayment -> #(
+      model,
+      trigger_transition(
+        using: ViewTransitionedToAddPayment(state.ForwardNavigation),
+        direction: transition.Backward,
+      ),
+    )
+    UserClickedDetailedMonthView(month_year) -> #(
+      model,
+      trigger_transition(
+        using: ViewTransitionedToMonthlyDetail(
+          state.ForwardNavigation,
+          month_year,
+        ),
+        direction: transition.Forward,
+      ),
+    )
+    UserClickedBack -> {
+      let previous_view = model |> state.get_previous_view
+      let direction = case previous_view {
+        Some(to) ->
+          get_transition_direction(to:, from: Some(model.current_view))
+        None -> transition.None
       }
+      let view_transition =
+        previous_view
+        |> option.unwrap(model.current_view)
+        |> get_view_transition(state.BackwardNavigation)
+      #(model, trigger_transition(using: view_transition, direction:))
+    }
+    UserClickedMonthlyView -> {
+      let direction =
+        get_transition_direction(
+          to: MonthlySummary,
+          from: Some(model.current_view),
+        )
+      #(
+        model,
+        trigger_transition(
+          using: ViewTransitionedToMonthlySummary(state.ForwardNavigation),
+          direction:,
+        ),
+      )
     }
     // --- Add Payment View ---
     UserBlurredAmount(amount) -> #(input_amount(amount, model), effect.none())
@@ -521,6 +554,8 @@ fn decrement_amount(model: Model) -> Model {
 
 // --- Effects ---
 
+/// Saves a user via an effect based on the storage method set in config.
+///
 fn save_user_effect(model: state.Model) -> Effect(Msg) {
   storage_factory.perform(
     with: model.config.storage,
@@ -529,10 +564,60 @@ fn save_user_effect(model: state.Model) -> Effect(Msg) {
   )
 }
 
+/// Applies a custom delay to a message.
+///
 fn delay_msg(by delay: Int, msg msg: state.Msg) -> Effect(state.Msg) {
   use dispatch <- effect.from
   global.set_timeout(delay, fn() { dispatch(msg) })
   Nil
+}
+
+/// Fires off a View Transition effect for a given message using a specific
+/// transition type.
+///
+fn trigger_transition(
+  using message: state.Msg,
+  direction direction: transition.TransitionType,
+) -> Effect(state.Msg) {
+  use dispatch <- effect.from
+  transition.start(fn() { dispatch(message) }, direction)
+}
+
+// --- Helpers ---
+
+/// Returns the directional View Transition based on the current view and the
+/// new view it is transitioning to.
+///
+fn get_transition_direction(
+  to to: state.View,
+  from from: Option(state.View),
+) -> transition.TransitionType {
+  case to, from {
+    AddPayment, None -> transition.None
+    AddPayment, _ -> transition.Backward
+    MonthlySummary, Some(AddPayment) -> transition.Forward
+    MonthlySummary, Some(MonthlyDetail(_)) -> transition.Backward
+    MonthlySummary, _ -> transition.None
+    MonthlyDetail(_), None -> transition.None
+    MonthlyDetail(_), _ -> transition.Forward
+  }
+}
+
+/// Maps a View to its corresponding View Transition message.
+///
+fn get_view_transition(
+  from view: state.View,
+  direction direction: state.NavigationDirection,
+) -> state.Msg {
+  case view {
+    AddPayment -> ViewTransitionedToAddPayment(direction)
+    MonthlySummary -> ViewTransitionedToMonthlySummary(direction)
+    MonthlyDetail(mp) ->
+      ViewTransitionedToMonthlyDetail(
+        direction,
+        mp |> monthly_payment.get_month_year,
+      )
+  }
 }
 
 // --- FFI ---

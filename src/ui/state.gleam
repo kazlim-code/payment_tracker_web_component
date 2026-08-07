@@ -8,6 +8,7 @@ import core/payment_tracker/user.{type User}
 import core/storage.{type Response, type StorageConfig}
 import formal/form.{type Form}
 import gleam/option.{type Option, None, Some}
+import gleam/pair
 import lustre/attribute
 import lustre/element.{type Element}
 import tempo.{type Date, type MonthYear}
@@ -26,6 +27,15 @@ pub type View {
   MonthlySummary
   MonthlyDetail(MonthlyPayment)
   AddPayment
+}
+
+/// The direction of the view change. Useful for determining if the user has
+/// clicked 'back'.
+///
+pub type NavigationDirection {
+  ForwardNavigation
+  BackwardNavigation
+  NoNavigation
 }
 
 /// Data captured by the payment entry form.
@@ -127,6 +137,10 @@ pub type Msg {
   UserChangedSearchQuery(String)
   UserClearedSearchQuery
   UserClickedSortColumn(sort.Field)
+  ViewTransitionedToAddPayment(NavigationDirection)
+  ViewTransitionedToAddMonthPayment(NavigationDirection, String)
+  ViewTransitionedToMonthlySummary(NavigationDirection)
+  ViewTransitionedToMonthlyDetail(NavigationDirection, MonthYear)
 }
 
 /// Initialises the application state.
@@ -246,13 +260,39 @@ pub fn parse_date() -> form.Parser(Date) {
 /// Adds a view to the back stack if it's not already at the top.
 ///
 pub fn add_view_to_back_stack(
-  add view: View,
   stack back: List(View),
+  add view: View,
 ) -> List(View) {
   case back {
     [first, ..] if view != first -> [view, ..back]
     [] -> [view]
     _ -> back
+  }
+}
+
+/// Pops the top view from the back stack if one exists.
+///
+pub fn pop_view_to_back_stack(
+  stack back: List(View),
+) -> #(Option(View), List(View)) {
+  case back {
+    [first, ..rest] -> #(Some(first), rest)
+    _ -> #(None, [])
+  }
+}
+
+/// Updates back history stack based on forward/backward navigation.
+///
+pub fn update_back_stack(
+  model model: Model,
+  direction navigation_direction: NavigationDirection,
+) -> List(View) {
+  case navigation_direction {
+    ForwardNavigation ->
+      add_view_to_back_stack(add: model.current_view, stack: model.back_view)
+    BackwardNavigation ->
+      model.back_view |> pop_view_to_back_stack |> pair.second
+    _ -> model.back_view
   }
 }
 
@@ -262,4 +302,14 @@ pub fn toggle_debug_transition(model: Model) -> Model {
   let debug_view = !model.debug_view
   let debug_transition = True
   Model(..model, debug_transition:, debug_view:)
+}
+
+/// Gets the previous view in the back view stack if one exists.
+///
+pub fn get_previous_view(model model: Model) -> Option(View) {
+  case model.back_view {
+    [] -> None
+    [previous_view] -> Some(previous_view)
+    [previous_view, ..] -> Some(previous_view)
+  }
 }

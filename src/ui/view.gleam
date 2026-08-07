@@ -65,12 +65,14 @@ pub fn view(model: Model) -> Element(state.Msg) {
 fn add_payment_view(model: Model) -> Element(state.Msg) {
   html.section([attribute.class("add-payment-view")], [
     header_view(model),
-    html.main([], [
-      add_payment_form(with: model),
-      case model.debug_transition, model.debug_view {
-        False, False -> element.none()
-        _, _ -> devtools_panel(model)
-      },
+    html.main([attribute.attribute("part", "content")], [
+      html.div([], [
+        add_payment_form(with: model),
+        case model.debug_transition, model.debug_view {
+          False, False -> element.none()
+          _, _ -> devtools_panel(model)
+        },
+      ]),
     ]),
   ])
 }
@@ -330,34 +332,18 @@ fn summary_view(model: Model) -> Element(state.Msg) {
 
   html.section([attribute.class("summary-view")], [
     header_view(model),
-    html.main([attribute.class("grid")], case list.is_empty(monthly_payments) {
-      True -> [monthly_summaries_empty()]
-      False -> [
-        // TODO: Add sticky headers for the year separators
-        html.ul(
-          [attribute.class("monthly-payments-container")],
-          list.map(monthly_payments, fn(monthly) {
-            let month_name =
-              monthly |> monthly_payment.month_string_from_monthly_payment
-            let month_year =
-              monthly
-              |> monthly_payment.get_month_year
-            let total =
-              monthly
-              |> monthly_payment.get_total
-              |> option.unwrap(0.0)
-              |> float_to_padded_string
-            let paid =
-              monthly
-              |> monthly_payment.get_paid_timestamp
-              |> option.map(fn(paid_timestamp) {
-                timestamp.to_rfc3339(paid_timestamp, calendar.utc_offset)
-              })
-            html.li([], [month_card(month_name:, month_year:, paid:, total:)])
-          }),
-        ),
-      ]
-    }),
+    html.main([attribute.attribute("part", "content")], [
+      html.div([attribute.class("grid")], case list.is_empty(monthly_payments) {
+        True -> [monthly_summaries_empty()]
+        False -> [
+          // TODO: Add sticky headers for the year separators
+          html.ul(
+            [attribute.class("monthly-payments-container")],
+            monthly_payments |> list.map(month_list_item),
+          ),
+        ]
+      }),
+    ]),
   ])
 }
 
@@ -379,6 +365,27 @@ fn monthly_summaries_empty() {
       [html.text("+ Add Your First Payment")],
     ),
   ])
+}
+
+/// Prepares a list item with the correct data for the month_card.
+///
+fn month_list_item(monthly_payment mp: MonthlyPayment) {
+  let month_name = mp |> monthly_payment.month_string_from_monthly_payment
+  let month_year =
+    mp
+    |> monthly_payment.get_month_year
+  let total =
+    mp
+    |> monthly_payment.get_total
+    |> option.unwrap(0.0)
+    |> float_to_padded_string
+  let paid =
+    mp
+    |> monthly_payment.get_paid_timestamp
+    |> option.map(fn(paid_timestamp) {
+      timestamp.to_rfc3339(paid_timestamp, calendar.utc_offset)
+    })
+  html.li([], [month_card(month_name:, month_year:, paid:, total:)])
 }
 
 /// Renders a summary card for a specific month, showing payment status
@@ -432,7 +439,8 @@ fn month_card(
           html.button(
             [
               attribute.class("quick-add-btn"),
-              event.on_click(UserClickedAddMonthPayment(valid_date_string)),
+              event.on_click(UserClickedAddMonthPayment(valid_date_string))
+                |> event.stop_propagation(),
             ],
             [
               ui_svg.plus(),
@@ -494,7 +502,7 @@ fn detail_view(model: Model, monthly: MonthlyPayment) -> Element(state.Msg) {
 
   html.section([attribute.class("detailed-month-view")], [
     header_view(model),
-    html.main([], [
+    html.main([attribute.attribute("part", "content")], [
       detailed_month_heading(name: month_name, for: year, total:),
       case owed_element_result {
         Ok(element) -> element

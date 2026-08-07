@@ -922,11 +922,19 @@ pub fn base() -> Element(msg) {
       background-color: var(--background);
       color: var(--on-background);
       container: add-payment / inline-size;
-      display: flex;
-      flex-direction: column;
+      height: 100%;
       min-height: inherit;
+      width: 100%;
 
       main {
+        display: flex;
+        flex-direction: column;
+        height: inherit;
+        min-height: inherit;
+        width: inherit;
+      }
+
+      main > div {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
         min-height: inherit;
@@ -1073,12 +1081,17 @@ pub fn base() -> Element(msg) {
     }
 
     .summary-view {
-      display: flex;
-      flex-direction: column;
       min-height: inherit;
       width: 100%;
 
       main {
+        display: flex;
+        flex-direction: column;
+        min-height: inherit;
+        width: 100%;
+      }
+
+      main > div {
         container: summary-view / inline-size;
         display: grid;
         grid-template-columns: minmax(0, 1fr);

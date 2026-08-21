@@ -236,8 +236,7 @@ export function get_attributes() {
 // in favour of encapsulating `@keyframes` and `view-transition-name` rules directly in `src/ui/styles.gleam`.
 
 // Apply global styles for the payment tracker and enable view transitions api
-const transitionStyles = document.createElement("style");
-transitionStyles.textContent = `
+const transitionCssText = `
   /* Disable root transition completely so we don't get the default UA fade */
   :root {
     --content-view-transition-time: 0.25s;
@@ -323,8 +322,22 @@ transitionStyles.textContent = `
     }
   }
 `;
+
+// Inject css required for View Transitions
 if (typeof document !== "undefined") {
-  document.head.appendChild(transitionStyles);
+  if ("adoptedStyleSheets" in document) {
+    // Initialise and adopt stylesheet in the document
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(transitionCssText);
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+    console.log("✅ Using adoptedStyleSheets for View Transitions");
+  } else {
+    // Fallback for older environments lacking adoptedStylesheets
+    const transitionStyles = document.createElement("style");
+    transitionStyles.textContent = transitionCssText;
+    document.head.appendChild(transitionStyles);
+    console.log("🔄 Fallback injecting style tag for View Transitions");
+  }
 }
 
 export function startViewTransition(updateDom, direction) {

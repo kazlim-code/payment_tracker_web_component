@@ -48,7 +48,6 @@ This document tracks the current status of features, planned improvements, and t
 - [x] **IndexedDB Refactor:** Transition IndexedDB from a simple key-value blob store to a structured, domain-driven database (separate object stores for users and payments) to establish relational parity for the upcoming SQLite backend.
 - [ ] **SQLite Wasm:** Full implementation of SQLite Wasm backend.
 
-
 ### 🧪 Testing
 - [x] **Prioritized Coverage:** Implement robust unit and integration tests.
 - [x] Recover/Adapt tests from the predecessor project.

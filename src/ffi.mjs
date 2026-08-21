@@ -15,7 +15,7 @@ const getStorage = () => {
     globalThis.__mockLocalStorage = {
       store: new Map(),
       getItem(key) {
-        return this.store.get(key) || null;
+        return this.store.has(key) ? this.store.get(key) : null;
       },
       setItem(key, value) {
         if (value === "QUOTA_EXCEEDED") {
@@ -41,7 +41,7 @@ const getStorage = () => {
 export function read(key) {
   try {
     const value = getStorage().getItem(key);
-    return value ? new Ok(value) : new Error(undefined);
+    return value !== null ? new Ok(value) : new Error(undefined);
   } catch (e) {
     return new Error(undefined);
   }

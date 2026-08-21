@@ -229,6 +229,12 @@ export function get_attributes() {
 
 // View Transitions API
 
+// TODO (Scoped View Transitions Level 2 Migration):
+// Once Element-Scoped View Transitions (CSS View Transitions Level 2) gain baseline browser support,
+// migrate from `document.startViewTransition()` to `element.startViewTransition()` or
+// `shadowRoot.startViewTransition()`. This will allow removing this global Light DOM style injection
+// in favour of encapsulating `@keyframes` and `view-transition-name` rules directly in `src/ui/styles.gleam`.
+
 // Apply global styles for the payment tracker and enable view transitions api
 const transitionStyles = document.createElement("style");
 transitionStyles.textContent = `

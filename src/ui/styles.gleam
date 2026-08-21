@@ -136,6 +136,11 @@ pub fn base() -> Element(msg) {
 
     /* --- Animations --- */
 
+    /* TODO (Scoped View Transitions Level 2):
+       When element.startViewTransition / shadowRoot.startViewTransition are supported,
+       migrate the view transition @keyframes and `view-transition-name: content` declarations
+       from `src/ffi.mjs` directly into this Shadow DOM stylesheet. */
+
     @keyframes button-success {
       5% {
         scale: 1.1;

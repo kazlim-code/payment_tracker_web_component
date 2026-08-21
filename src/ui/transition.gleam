@@ -7,6 +7,10 @@ pub type TransitionType {
 /// Starts a View Transition for a given transition type via the
 /// startViewTransition FFI.
 ///
+/// TODO (Scoped View Transitions Level 2):
+/// Update this FFI binding to accept a target Element or ShadowRoot once
+/// `element.startViewTransition()` reaches cross-browser baseline support.
+///
 pub fn start(update_dom: fn() -> Nil, direction: TransitionType) -> Nil {
   let dir_str = case direction {
     Forward -> "forward"

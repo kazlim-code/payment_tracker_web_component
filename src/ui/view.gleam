@@ -65,6 +65,9 @@ pub fn view(model: Model) -> Element(state.Msg) {
 fn add_payment_view(model: Model) -> Element(state.Msg) {
   html.section([attribute.class("add-payment-view")], [
     header_view(model),
+    // TODO (Scoped View Transitions Level 2):
+    // `part="content"` is required for Level 1 Light DOM styling of view transitions.
+    // When element-scoped transitions land, this can be scoped natively within the shadow tree.
     html.main([attribute.attribute("part", "content")], [
       html.div([], [
         add_payment_form(with: model),

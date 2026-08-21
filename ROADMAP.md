@@ -38,6 +38,7 @@ This document tracks the current status of features, planned improvements, and t
 - [x] Update hex code colours to oklab hsla or whatever modern practices are used.
 - [x] Implement the **View Transitions API** for seamless navigation between views.
 - [ ] **Hero Transition:** Transition the "Add Payment" input box to the header/center when switching to the Monthly Summary view, and back.
+- [ ] **Scoped View Transitions (Level 2 Future-Proofing):** Migrate from `document.startViewTransition()` to `element.startViewTransition()` / `shadowRoot.startViewTransition()` once baseline browser support is established. Encapsulate `@keyframes` and `view-transition-name` rules entirely within `styles.gleam` (Shadow DOM), removing global Light DOM CSS injection from `ffi.mjs` and `part="content"` attributes from views.
 - [ ] Explore further use of modern CSS (Container Queries, Scroll Snap).
 
 ### 💾 Storage Architecture

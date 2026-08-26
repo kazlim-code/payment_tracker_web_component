@@ -11,3 +11,6 @@ erl_crash.dump
 
 # AI learnings
 /docs/learnings/
+
+# Node related testing
+node_modules

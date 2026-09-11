@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "test": "gleam build --target javascript && node --test ./*.test.mjs",
+    "test:only": "gleam build --target javascript && node --test-only ./*.test.mjs"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.0.0"
+  },
+  "imports": {
+    "#ffi": "./support/ffi.mjs",
+    "#gleam": "./support/gleam.mjs"
+  }
+}

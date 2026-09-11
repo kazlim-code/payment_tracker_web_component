@@ -31,8 +31,8 @@ This project uses Gleam and Lustre to build a high-quality web component for tra
 - **Feature Build:** When a feature is complete, ensure the project still builds correctly by running `gleam run -m lustre/dev build` from the project root.
 - **Verification:** Always run `gleam test` to verify logic and structural snapshots before completion.
 
-## Git Workflow & Commits
-Follow the `git-workflow-and-versioning` skill for all git operations.
+## Version Control & Commits (Jujutsu / jj)
+Prefer `jj` over `git` for all version control operations.
 
 ### Atomic Commits
 - Make small, focused, and stable changes.

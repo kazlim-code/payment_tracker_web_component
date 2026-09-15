@@ -68,21 +68,37 @@ const USERS_STORE = "users";
 const PAYMENTS_STORE = "payments";
 const USER_PAYMENTS_STORE = "user_payments";
 
+/**
+ * Creates the user, payment and joining user_payments stores.
+ * @param {IDBCursor} db
+ */
+function createStores(db) {
+  if (!db.objectStoreNames.contains(USERS_STORE)) {
+    const userStore = db.createObjectStore(USERS_STORE, {
+      keyPath: "username",
+    });
+    userStore.createIndex("by_created", "created", { unique: false });
+  }
+  if (!db.objectStoreNames.contains(PAYMENTS_STORE)) {
+    db.createObjectStore(PAYMENTS_STORE, { keyPath: "id" });
+  }
+  if (!db.objectStoreNames.contains(USER_PAYMENTS_STORE)) {
+    db.createObjectStore(USER_PAYMENTS_STORE, {
+      keyPath: ["username", "payment_id"],
+    });
+  }
+}
+
+/**
+ * Opens the database and executes the given callback with the database object.
+ * @param {string} dbName
+ * @param {function} callback
+ */
 function withDB(dbName, callback) {
   const request = indexedDB.open(dbName, DB_VERSION);
   request.onupgradeneeded = (event) => {
     const db = request.result;
-    if (!db.objectStoreNames.contains(USERS_STORE)) {
-      db.createObjectStore(USERS_STORE, { keyPath: "username" });
-    }
-    if (!db.objectStoreNames.contains(PAYMENTS_STORE)) {
-      db.createObjectStore(PAYMENTS_STORE, { keyPath: "id" });
-    }
-    if (!db.objectStoreNames.contains(USER_PAYMENTS_STORE)) {
-      db.createObjectStore(USER_PAYMENTS_STORE, {
-        keyPath: ["username", "payment_id"],
-      });
-    }
+    createStores(db);
     // Migration from version 1 if necessary
     if (event.oldVersion < 1) {
       // Version 1 had a "keyvaluepairs" store. We'll just let it be or delete it if we were cleaner.
@@ -101,6 +117,8 @@ function withDB(dbName, callback) {
 
 /**
  * Loads the first user found in the database, reconstructing it from relational stores.
+ * @param {string} dbName
+ * @param {function} callback
  */
 export function idb_load_user(dbName, callback) {
   withDB(dbName, (res) => {
@@ -112,7 +130,7 @@ export function idb_load_user(dbName, callback) {
     );
 
     const usersStore = transaction.objectStore(USERS_STORE);
-    const userRequest = usersStore.getAll(null, 1); // Get the first user
+    const userRequest = usersStore.index("by_created").getAll(null, 1); // Get the first created user
 
     userRequest.onsuccess = () => {
       const user = userRequest.result[0];
@@ -122,7 +140,6 @@ export function idb_load_user(dbName, callback) {
 
       const userPaymentsStore = transaction.objectStore(USER_PAYMENTS_STORE);
 
-      // I'll update onupgradeneeded to add an index.
       const payments = [];
       const userPaymentsRequest = userPaymentsStore.openCursor(
         IDBKeyRange.bound([user.username], [user.username, []]),
@@ -141,7 +158,6 @@ export function idb_load_user(dbName, callback) {
             cursor.continue();
           };
         } else {
-          // Finished gathering payments
           user.payments = payments;
           console.info("🟢 👤 User loaded");
           callback(new Ok(JSON.stringify(user)));
@@ -159,6 +175,9 @@ export function idb_load_user(dbName, callback) {
 
 /**
  * Saves a user and their payments across relational stores.
+ * @param {string} dbName
+ * @param {string} userJson
+ * @param {function} callback
  */
 export function idb_save_user(dbName, userJson, callback) {
   const user = JSON.parse(userJson);
@@ -217,6 +236,10 @@ export function idb_save_user(dbName, userJson, callback) {
 
 // ATTRIBUTES
 
+/**
+ * Returns the attributes of the payment tracker element.
+ * @returns {Object}
+ */
 export function get_attributes() {
   const el = document.querySelector("payment-tracker");
   if (!el) return {};
@@ -340,6 +363,11 @@ if (typeof document !== "undefined") {
   }
 }
 
+/**
+ * Starts a view transition with the given update function and direction.
+ * @param {function} updateDom
+ * @param {string} direction
+ */
 export function startViewTransition(updateDom, direction) {
   // Ensure feature exists
   if (!document.startViewTransition) {
@@ -350,7 +378,7 @@ export function startViewTransition(updateDom, direction) {
   // Passing types dynamically requires the direction string
   const transition = document.startViewTransition({
     update: updateDom,
-    types: direction !== "none" ? [direction] : []
+    types: direction !== "none" ? [direction] : [],
   });
 
   transition.ready.catch((e) => {

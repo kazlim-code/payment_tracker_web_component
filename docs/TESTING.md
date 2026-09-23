@@ -81,8 +81,11 @@ npm --prefix test/ffi run test:only
 
 ### Key Principles for FFI Tests:
 * **Isolation:** Re-initialise `globalThis.indexedDB = new IDBFactory()` in `beforeEach` to guarantee each test starts with empty stores.
+* **Single-Responsibility Testing:** Tests must specifically test for one thing only. Avoid compound assertions across distinct concerns in a single test block (e.g. separate "persists user metadata" from "leaves payment stores empty").
+* **Shared Setup & Action:** Use `beforeEach` (or `before`) blocks for shared test execution (e.g. saving or loading a record), leaving each `it(...)` to assert one specific aspect of the result or store state.
 * **Semantic Nesting:** Organise test scenarios using nested `describe("when ...", () => { ... })` blocks for all conditional cases and edge states.
 * **Australian English:** Maintain Australian English spelling in all test descriptions, comments, and helper documentation (e.g. `initialise`, `behaviour`, `serialise`).
+
 
 ## 4. The AI + Snapshot Workflow
 

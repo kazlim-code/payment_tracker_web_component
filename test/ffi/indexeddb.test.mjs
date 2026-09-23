@@ -2,8 +2,9 @@ import "fake-indexeddb/auto";
 import { IDBFactory, IDBIndex, IDBObjectStore } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { idb_load_user } from "#ffi";
+import { idb_load_user, idb_save_user } from "#ffi";
 import { Error as GleamError, Ok as GleamOk } from "#gleam";
+
 
 const DB_NAME = "payment-tracker-test-db";
 const DB_VERSION = 2;
@@ -221,6 +222,79 @@ function loadUser(dbName) {
   return new Promise((resolve) => idb_load_user(dbName, resolve));
 }
 
+/**
+ * Promisified wrapper around idb_save_user callback to simplify async test assertions.
+ *
+ * @param {string} dbName
+ * @param {string} userJson
+ * @returns {Promise<any>}
+ */
+function saveUser(dbName, userJson) {
+  return new Promise((resolve) => idb_save_user(dbName, userJson, resolve));
+}
+
+/**
+ * Replaces IDBObjectStore.prototype.put with a mock implementation that forces
+ * the transaction to error asynchronously when putting a record.
+ *
+ * @param {function} idbStorePut - Original reference to restore in teardown
+ * @returns {void}
+ */
+function mockPutError(idbStorePut) {
+  IDBObjectStore.prototype.put = function (...args) {
+    const request = idbStorePut.apply(this, args);
+    const transaction = this.transaction;
+    queueMicrotask(() => {
+      transaction.error = new DOMException("Store write failure", "DataError");
+      if (typeof transaction.onerror === "function") {
+        transaction.onerror(new Event("error"));
+      }
+    });
+
+    return request;
+  };
+}
+
+/**
+ * Reads all records directly from an IndexedDB object store.
+ * Useful for verifying database state independently of idb_load_user.
+ *
+ * @param {IDBDatabase} idb
+ * @param {string} dbName
+ * @param {string} storeName
+ * @returns {Promise<Array<any>>}
+ */
+function getAllFromStore(idb, dbName, storeName) {
+  return new Promise((resolve, reject) => {
+    const request = idb.open(dbName, DB_VERSION);
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction([storeName], "readonly");
+      const store = transaction.objectStore(storeName);
+      const getAllRequest = store.getAll();
+      getAllRequest.onsuccess = () => {
+        db.close();
+        resolve(getAllRequest.result);
+      };
+      getAllRequest.onerror = () => {
+        db.close();
+        reject(
+          new globalThis.Error(
+            "⚠️ Failed to read store: " + getAllRequest.error?.message,
+          ),
+        );
+      };
+    };
+    request.onerror = () => {
+      reject(
+        new globalThis.Error(
+          "⚠️ Failed to open DB for reading store: " + request.error?.message,
+        ),
+      );
+    };
+  });
+}
+
 // --- END Helpers ---
 
 describe("IndexedDB FFI", () => {
@@ -243,22 +317,31 @@ describe("IndexedDB FFI", () => {
     });
 
     describe("when a user exists without payments", () => {
+      let res;
+      let user;
+
       beforeEach(async () => {
         await setupObjectStores(globalThis.indexedDB, DB_NAME);
         await seedUsers(globalThis.indexedDB, DB_NAME, basicUserJsonString);
+        res = await loadUser(DB_NAME);
+        user = JSON.parse(res[0]);
       });
 
-      it("returns the user with an empty payments array", async () => {
-        const res = await loadUser(DB_NAME);
+      it("returns a successful GleamOk result", () => {
         assert.equal(res.isOk(), true);
         assert.equal(res instanceof GleamOk, true);
+      });
 
-        const user = JSON.parse(res[0]);
+      it("returns the user profile metadata", () => {
         assert.equal(user.username, "TestUser");
         assert.equal(user.first_name, "John");
+      });
+
+      it("returns an empty payments array", () => {
         assert.deepEqual(user.payments, []);
       });
     });
+
 
     describe("when a user exists with associated payments", () => {
       const samplePayments = [
@@ -444,6 +527,8 @@ describe("IndexedDB FFI", () => {
     });
 
     describe("when user metadata contains special characters", () => {
+      let res;
+      let user;
       const specialUser = {
         username: "user+testing@example.com (personal)",
         first_name: "Renée",
@@ -463,20 +548,26 @@ describe("IndexedDB FFI", () => {
             },
           ],
         });
+        res = await loadUser(DB_NAME);
+        user = JSON.parse(res[0]);
       });
 
-      it("correctly queries composite key bounds and returns the user and payments", async () => {
-        const res = await loadUser(DB_NAME);
+      it("returns a successful GleamOk result", () => {
         assert.equal(res.isOk(), true);
+      });
 
-        const user = JSON.parse(res[0]);
+      it("returns user metadata matching the special characters", () => {
         assert.equal(user.username, "user+testing@example.com (personal)");
         assert.equal(user.first_name, "Renée");
         assert.equal(user.last_name, "O'Connor");
+      });
+
+      it("returns the associated payments", () => {
         assert.equal(user.payments.length, 1);
         assert.equal(user.payments[0].id, "special_p1");
       });
     });
+
 
     describe("when IndexedDB connection fails", () => {
       let originalOpen;
@@ -554,5 +645,403 @@ describe("IndexedDB FFI", () => {
       });
     });
   });
+
+  describe("idb_save_user()", () => {
+    describe("when saving a new user without payments", () => {
+      let res;
+      const userObj = {
+        username: "NoPaymentsUser",
+        first_name: "Charlie",
+        last_name: "Brown",
+        created: "2026-05-01T00:00:00.000Z",
+        month_year: "2026-05",
+        payments: [],
+      };
+
+      beforeEach(async () => {
+        res = await saveUser(DB_NAME, JSON.stringify(userObj));
+      });
+
+      it("returns GleamOk(undefined)", () => {
+        assert.equal(res.isOk(), true);
+        assert.equal(res instanceof GleamOk, true);
+        assert.equal(res[0], undefined);
+      });
+
+      it("persists user metadata without nested payments", async () => {
+        const usersInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          USERS_STORE,
+        );
+        assert.equal(usersInDb.length, 1);
+        assert.equal(usersInDb[0].username, "NoPaymentsUser");
+        assert.equal(usersInDb[0].first_name, "Charlie");
+        assert.equal(usersInDb[0].last_name, "Brown");
+        assert.equal("payments" in usersInDb[0], false);
+      });
+
+      it("leaves payment stores empty", async () => {
+        const paymentsInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          PAYMENTS_STORE,
+        );
+        assert.equal(paymentsInDb.length, 0);
+
+        const joinsInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          USER_PAYMENTS_STORE,
+        );
+        assert.equal(joinsInDb.length, 0);
+      });
+    });
+
+    describe("when saving a new user with payments", () => {
+      let res;
+      const userObj = {
+        username: "PaidUser",
+        first_name: "Dana",
+        last_name: "Scully",
+        created: "2026-05-02T00:00:00.000Z",
+        month_year: "2026-05",
+        payments: [
+          { id: "p_1", amount: 120.0, description: "Electricity", paid: true },
+          { id: "p_2", amount: 55.5, description: "Gas", paid: false },
+        ],
+      };
+
+      beforeEach(async () => {
+        res = await saveUser(DB_NAME, JSON.stringify(userObj));
+      });
+
+      it("returns GleamOk(undefined)", () => {
+        assert.equal(res.isOk(), true);
+        assert.equal(res instanceof GleamOk, true);
+      });
+
+      it("persists clean metadata in the users store", async () => {
+        const usersInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          USERS_STORE,
+        );
+        assert.equal(usersInDb.length, 1);
+        assert.equal(usersInDb[0].username, "PaidUser");
+        assert.equal("payments" in usersInDb[0], false);
+      });
+
+      it("persists payments in the payments store", async () => {
+        const paymentsInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          PAYMENTS_STORE,
+        );
+        assert.equal(paymentsInDb.length, 2);
+        const paymentIds = paymentsInDb.map((p) => p.id).sort();
+        assert.deepEqual(paymentIds, ["p_1", "p_2"]);
+      });
+
+      it("persists relational join records in the user_payments store", async () => {
+        const joinsInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          USER_PAYMENTS_STORE,
+        );
+        assert.equal(joinsInDb.length, 2);
+        assert.deepEqual(joinsInDb, [
+          { username: "PaidUser", payment_id: "p_1" },
+          { username: "PaidUser", payment_id: "p_2" },
+        ]);
+      });
+    });
+
+    describe("when updating an existing user with modified payments", () => {
+      let res;
+      const initialUser = {
+        username: "UpdateUser",
+        first_name: "InitialName",
+        created: "2026-05-03T00:00:00.000Z",
+        payments: [
+          { id: "old_p1", amount: 20 },
+          { id: "old_p2", amount: 30 },
+        ],
+      };
+      const updatedUser = {
+        username: "UpdateUser",
+        first_name: "UpdatedName",
+        created: "2026-05-03T00:00:00.000Z",
+        payments: [{ id: "new_p3", amount: 150 }],
+      };
+
+      beforeEach(async () => {
+        await saveUser(DB_NAME, JSON.stringify(initialUser));
+        res = await saveUser(DB_NAME, JSON.stringify(updatedUser));
+      });
+
+      it("returns GleamOk(undefined)", () => {
+        assert.equal(res.isOk(), true);
+        assert.equal(res instanceof GleamOk, true);
+      });
+
+      it("updates user profile data in the users store", async () => {
+        const usersInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          USERS_STORE,
+        );
+        assert.equal(usersInDb.length, 1);
+        assert.equal(usersInDb[0].first_name, "UpdatedName");
+      });
+
+      it("replaces old join records with updated payment join records", async () => {
+        const joinsInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          USER_PAYMENTS_STORE,
+        );
+        assert.equal(joinsInDb.length, 1);
+        assert.deepEqual(joinsInDb[0], {
+          username: "UpdateUser",
+          payment_id: "new_p3",
+        });
+      });
+    });
+
+    describe("when round-tripping with idb_load_user", () => {
+      let loadedUser;
+      const userObj = {
+        username: "RoundTripUser",
+        first_name: "Sam",
+        last_name: "Taylor",
+        created: "2026-05-04T00:00:00.000Z",
+        month_year: "2026-05",
+        monthly_payments: [],
+        payments: [
+          {
+            id: "rt_p1",
+            amount: 88.0,
+            description: "Gym Membership",
+            paid: true,
+          },
+        ],
+      };
+
+      beforeEach(async () => {
+        const saveRes = await saveUser(DB_NAME, JSON.stringify(userObj));
+        assert.equal(saveRes.isOk(), true);
+
+        const loadRes = await loadUser(DB_NAME);
+        assert.equal(loadRes.isOk(), true);
+
+        loadedUser = JSON.parse(loadRes[0]);
+      });
+
+      it("reconstructs user metadata accurately", () => {
+        assert.equal(loadedUser.username, "RoundTripUser");
+        assert.equal(loadedUser.first_name, "Sam");
+        assert.equal(loadedUser.last_name, "Taylor");
+        assert.equal(loadedUser.month_year, "2026-05");
+      });
+
+      it("reconstructs user payments accurately", () => {
+        assert.deepEqual(loadedUser.payments, userObj.payments);
+      });
+    });
+
+    describe("when clearing payments for a prefix-sharing username", () => {
+      let updateRes;
+
+      beforeEach(async () => {
+        // Save "alexander" with a payment
+        await saveUser(
+          DB_NAME,
+          JSON.stringify({
+            username: "alexander",
+            created: "2026-01-01T00:00:00.000Z",
+            payments: [{ id: "p_alexander", amount: 99 }],
+          }),
+        );
+
+        // Save "alex" with a payment
+        await saveUser(
+          DB_NAME,
+          JSON.stringify({
+            username: "alex",
+            created: "2026-01-02T00:00:00.000Z",
+            payments: [{ id: "p_alex", amount: 15 }],
+          }),
+        );
+
+        // Update "alex" with empty payments, triggering delete cursor sweep
+        updateRes = await saveUser(
+          DB_NAME,
+          JSON.stringify({
+            username: "alex",
+            created: "2026-01-02T00:00:00.000Z",
+            payments: [],
+          }),
+        );
+      });
+
+      it("returns GleamOk(undefined)", () => {
+        assert.equal(updateRes.isOk(), true);
+      });
+
+      it("does not delete join records belonging to an extended username", async () => {
+        const joinsInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          USER_PAYMENTS_STORE,
+        );
+        assert.equal(joinsInDb.length, 1);
+        assert.deepEqual(joinsInDb[0], {
+          username: "alexander",
+          payment_id: "p_alexander",
+        });
+      });
+    });
+
+    describe("when user JSON has no payments property", () => {
+      let res;
+      const noPaymentsField = {
+        username: "NoFieldUser",
+        first_name: "Jordan",
+        created: "2026-05-05T00:00:00.000Z",
+      };
+
+      beforeEach(async () => {
+        res = await saveUser(DB_NAME, JSON.stringify(noPaymentsField));
+      });
+
+      it("returns GleamOk(undefined)", () => {
+        assert.equal(res.isOk(), true);
+      });
+
+      it("persists user metadata successfully", async () => {
+        const usersInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          USERS_STORE,
+        );
+        assert.equal(usersInDb.length, 1);
+        assert.equal(usersInDb[0].username, "NoFieldUser");
+      });
+
+      it("leaves join store empty", async () => {
+        const joinsInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          USER_PAYMENTS_STORE,
+        );
+        assert.equal(joinsInDb.length, 0);
+      });
+    });
+
+    describe("when user metadata contains special characters", () => {
+      let res;
+      const specialUser = {
+        username: "user+dev@domain.co.nz (work)",
+        first_name: "Hélène",
+        created: "2026-05-06T00:00:00.000Z",
+        payments: [{ id: "pay_special_99", amount: 49.95 }],
+      };
+
+      beforeEach(async () => {
+        res = await saveUser(DB_NAME, JSON.stringify(specialUser));
+      });
+
+      it("returns GleamOk(undefined)", () => {
+        assert.equal(res.isOk(), true);
+      });
+
+      it("persists special character username in the users store", async () => {
+        const usersInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          USERS_STORE,
+        );
+        assert.equal(usersInDb.length, 1);
+        assert.equal(usersInDb[0].username, "user+dev@domain.co.nz (work)");
+      });
+
+      it("persists join record linked to special character username", async () => {
+        const joinsInDb = await getAllFromStore(
+          globalThis.indexedDB,
+          DB_NAME,
+          USER_PAYMENTS_STORE,
+        );
+        assert.equal(joinsInDb.length, 1);
+        assert.deepEqual(joinsInDb[0], {
+          username: "user+dev@domain.co.nz (work)",
+          payment_id: "pay_special_99",
+        });
+      });
+    });
+
+    describe("when userJson is invalid JSON", () => {
+      it("throws a SyntaxError synchronously", () => {
+        assert.throws(
+          () => idb_save_user(DB_NAME, "not_valid_json_payload", () => {}),
+          /SyntaxError/,
+        );
+      });
+    });
+
+    describe("when IndexedDB connection fails", () => {
+      let originalOpen;
+
+      beforeEach(() => {
+        originalOpen = globalThis.indexedDB.open;
+        globalThis.indexedDB.open = () => {
+          const request = new EventTarget();
+          queueMicrotask(() => {
+            request.error = new DOMException(
+              "Connection failed",
+              "UnknownError",
+            );
+            if (typeof request.onerror === "function") {
+              request.onerror(new Event("error"));
+            }
+          });
+          return request;
+        };
+      });
+
+      afterEach(() => {
+        globalThis.indexedDB.open = originalOpen;
+      });
+
+      it("returns a GleamError with '⚠️ Failed to open IndexedDB' message", async () => {
+        const res = await saveUser(DB_NAME, basicUserJsonString);
+        assert.equal(res.isOk(), false);
+        assert.equal(res instanceof GleamError, true);
+        assert.match(res[0], /⚠️ Failed to open IndexedDB: Connection failed/);
+      });
+    });
+
+    describe("when writing to an object store fails", () => {
+      let originalPut;
+
+      beforeEach(async () => {
+        originalPut = IDBObjectStore.prototype.put;
+        await setupObjectStores(globalThis.indexedDB, DB_NAME);
+        mockPutError(originalPut);
+      });
+
+      afterEach(() => {
+        IDBObjectStore.prototype.put = originalPut;
+      });
+
+      it("returns a GleamError with '⚠️ Failed to save user' message", async () => {
+        const res = await saveUser(DB_NAME, basicUserJsonString);
+        assert.equal(res.isOk(), false);
+        assert.equal(res instanceof GleamError, true);
+        assert.match(res[0], /⚠️ Failed to save user: Store write failure/);
+      });
+    });
+  });
 });
+
 

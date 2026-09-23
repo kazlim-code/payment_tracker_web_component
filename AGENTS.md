@@ -30,6 +30,10 @@ This project uses Gleam and Lustre to build a high-quality web component for tra
    ```sh
    npm --prefix test/ffi test
    ```
+ - **Single-Responsibility Testing:** Tests must specifically test for one thing only. Avoid bundling multiple assertions across unrelated concerns into a single test case (e.g. split "persists user metadata" and "leaves payment stores empty" into dedicated `it(...)` blocks).
+ - **Shared Setup & Execution:** Set up `beforeEach` (or `before`) blocks to handle shared setup, seeding, and execution (such as saving or loading records), allowing each individual test to focus strictly on verifying its specific outcome.
+ - **Semantic Nesting:** Use nested `describe("when ...", () => { ... })` and `describe("if ...", () => { ... })` blocks for any conditional or branch scenarios.
+
 
 ## Development
 - **Gleam files:** When `.gleam` files are modified or features are complete, run `gleam format` from the root directory.

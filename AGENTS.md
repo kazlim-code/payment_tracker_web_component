@@ -25,11 +25,17 @@ This project uses Gleam and Lustre to build a high-quality web component for tra
 
 ## Testing
  - Follow the hybrid testing strategy (Unit + Snapshot) documented in `docs/TESTING.md`. This includes the AI + Snapshot Workflow for managing `birdie` snapshots and ensuring determinism.
+ - Run pure Gleam tests with `gleam test`.
+ - Run JavaScript FFI unit tests (Node.js test runner with in-memory `fake-indexeddb`) from the project root using:
+   ```sh
+   npm --prefix test/ffi test
+   ```
 
 ## Development
 - **Gleam files:** When `.gleam` files are modified or features are complete, run `gleam format` from the root directory.
 - **Feature Build:** When a feature is complete, ensure the project still builds correctly by running `gleam run -m lustre/dev build` from the project root.
-- **Verification:** Always run `gleam test` to verify logic and structural snapshots before completion.
+- **Verification:** Always run `gleam test` and `npm --prefix test/ffi test` to verify logic, structural snapshots, and JavaScript FFI behaviour before completion.
+
 
 ## Version Control & Commits (Jujutsu / jj)
 Prefer `jj` over `git` for all version control operations.

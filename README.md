@@ -60,6 +60,13 @@ Unit tests verify calculations, state transitions, and edge cases. Run them with
 gleam test
 ```
 
+### Running JavaScript FFI Tests
+JavaScript FFI tests verify `src/ffi.mjs` interactions (LocalStorage, IndexedDB multi-store queries, and View Transitions) using Node's native test runner and `fake-indexeddb`:
+```sh
+npm --prefix test/ffi test
+```
+
+
 ### Reviewing Snapshot Tests (Birdie)
 We use [Birdie](https://github.com/lpil/birdie) for snapshot testing. This requires a "Human-in-the-Loop" workflow:
 

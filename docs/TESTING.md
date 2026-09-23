@@ -63,7 +63,28 @@ When writing setup code for snapshot tests:
 *   **Counters/Hashes:** Ensure any incrementing IDs are hardcoded.
 *   **Environmental Data:** Do not rely on local timezones or OS-specific details.
 
-## 3. The AI + Snapshot Workflow
+## 3. JavaScript FFI Unit Testing (`node:test`)
+
+**Use when:** You are verifying JavaScript FFI code in `src/ffi.mjs`, such as LocalStorage error handling, View Transitions API contracts, or IndexedDB relational stores (`users`, `payments`, `user_payments`).
+
+JavaScript FFI tests run in an isolated Node.js environment using Node's native test runner (`node:test`) and an in-memory IndexedDB mock (`fake-indexeddb`).
+
+### Running FFI Tests
+Execute the tests directly from the repository root:
+```sh
+npm --prefix test/ffi test
+```
+To run only tests marked with `test.only`:
+```sh
+npm --prefix test/ffi run test:only
+```
+
+### Key Principles for FFI Tests:
+* **Isolation:** Re-initialise `globalThis.indexedDB = new IDBFactory()` in `beforeEach` to guarantee each test starts with empty stores.
+* **Semantic Nesting:** Organise test scenarios using nested `describe("when ...", () => { ... })` blocks for all conditional cases and edge states.
+* **Australian English:** Maintain Australian English spelling in all test descriptions, comments, and helper documentation (e.g. `initialise`, `behaviour`, `serialise`).
+
+## 4. The AI + Snapshot Workflow
 
 When AI agents are contributing to this codebase, they must follow this human-in-the-loop workflow for snapshots:
 
@@ -72,7 +93,7 @@ When AI agents are contributing to this codebase, they must follow this human-in
 3.  **Approval:** The human user reviews the output. If it is correct, the human manually runs `gleam run -m birdie` in their terminal and accepts the snapshot.
 4.  **Regression:** On future runs, if a snapshot fails, the AI must determine if the change was intended. If unintended, the AI fixes the code. If intended, the AI presents the diff to the human for approval.
 
-## 4. Test Organization
+## 5. Test Organization
 
 As the test suite grows, keep files logically organized.
 
@@ -83,3 +104,5 @@ As the test suite grows, keep files logically organized.
     // --- SERIALIZATION ---
     // --- UI UTILITIES ---
     ```
+*   `test/ffi/*.test.mjs`: Native JavaScript tests for FFI modules and storage layers.
+

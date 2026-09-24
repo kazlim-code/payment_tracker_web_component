@@ -10,14 +10,17 @@ import gleeunit
 import tempo/date as tempo_date
 import tempo/instant
 import ui/state.{
-  AddPayment, Dialog, MonthlyDetail, MonthlySummary, NoDialog, UserBlurredAmount,
-  UserChangedPaymentDate, UserChangedSearchQuery, UserClearedSearchQuery,
-  UserClickedAddMonthPayment, UserClickedBack, UserClickedDetailedMonthView,
+  AddPayment, BackwardNavigation, Dialog, ForwardNavigation, MonthlyDetail,
+  MonthlySummary, NoDialog, UserBlurredAmount, UserChangedPaymentDate,
+  UserChangedSearchQuery, UserClearedSearchQuery, UserClickedAddMonthPayment,
+  UserClickedAddPayment, UserClickedBack, UserClickedDetailedMonthView,
   UserClickedEditPayment, UserClickedMonthlyView, UserClickedSortColumn,
   UserClosedDialog, UserDecrementedAmount, UserDeletedPayment,
   UserIncrementedAmount, UserInputPaymentName, UserSubmittedPayment,
   UserToggledMonthlyPaymentPaid, UserToggledShared, UserToggledSharedPayment,
-  UserToggledToday,
+  UserToggledToday, ViewTransitionedToAddMonthPayment,
+  ViewTransitionedToAddPayment, ViewTransitionedToMonthlyDetail,
+  ViewTransitionedToMonthlySummary,
 }
 
 pub fn main() -> Nil {
@@ -34,7 +37,8 @@ fn create_mock_model() -> state.Model {
 
 pub fn update_navigate_to_summary_test() {
   let model = create_mock_model()
-  let #(model, _eff) = component.update(model, UserClickedMonthlyView)
+  let #(model, _eff) =
+    component.update(model, ViewTransitionedToMonthlySummary(ForwardNavigation))
 
   assert model.current_view == MonthlySummary
   assert model.back_view == [AddPayment]
@@ -43,9 +47,11 @@ pub fn update_navigate_to_summary_test() {
 pub fn update_navigate_to_summary_duplicate_test() {
   let model = create_mock_model()
   // Navigate once
-  let #(model, _eff) = component.update(model, UserClickedMonthlyView)
+  let #(model, _eff) =
+    component.update(model, ViewTransitionedToMonthlySummary(ForwardNavigation))
   // Navigate again
-  let #(model, _eff) = component.update(model, UserClickedMonthlyView)
+  let #(model, _eff) =
+    component.update(model, ViewTransitionedToMonthlySummary(ForwardNavigation))
 
   // Should not duplicate the view on stack if it's already at top
   assert model.back_view == [AddPayment]
@@ -53,8 +59,10 @@ pub fn update_navigate_to_summary_duplicate_test() {
 
 pub fn update_navigate_back_test() {
   let model = create_mock_model()
-  let #(model, _eff) = component.update(model, UserClickedMonthlyView)
-  let #(model, _eff) = component.update(model, UserClickedBack)
+  let #(model, _eff) =
+    component.update(model, ViewTransitionedToMonthlySummary(ForwardNavigation))
+  let #(model, _eff) =
+    component.update(model, ViewTransitionedToAddPayment(BackwardNavigation))
 
   assert model.current_view == AddPayment
   assert model.back_view == []
@@ -63,7 +71,8 @@ pub fn update_navigate_back_test() {
 pub fn update_navigate_back_empty_stack_test() {
   let model = create_mock_model()
   // Stack is empty
-  let #(model, _eff) = component.update(model, UserClickedBack)
+  let #(model, _eff) =
+    component.update(model, ViewTransitionedToAddPayment(BackwardNavigation))
 
   assert model.current_view == AddPayment
   assert model.back_view == []
@@ -72,13 +81,22 @@ pub fn update_navigate_back_empty_stack_test() {
 pub fn update_navigate_back_multiple_test() {
   let model = create_mock_model()
   // Navigate: AddPayment -> MonthlySummary -> AddPayment (via button)
-  let #(model, _eff) = component.update(model, UserClickedMonthlyView)
-  let #(model, _eff) = component.update(model, UserClickedAddMonthPayment(""))
+  let #(model, _eff) =
+    component.update(model, ViewTransitionedToMonthlySummary(ForwardNavigation))
+  let #(model, _eff) =
+    component.update(
+      model,
+      ViewTransitionedToAddMonthPayment(ForwardNavigation, ""),
+    )
 
   assert model.back_view == [MonthlySummary, AddPayment]
 
   // Back to MonthlySummary
-  let #(model, _eff) = component.update(model, UserClickedBack)
+  let #(model, _eff) =
+    component.update(
+      model,
+      ViewTransitionedToMonthlySummary(BackwardNavigation),
+    )
   assert model.current_view == MonthlySummary
   assert model.back_view == [AddPayment]
 }
@@ -93,7 +111,11 @@ pub fn update_click_detailed_month_view_test() {
   let u = user.add_payment(model.user, p) |> user.sync_monthly_payments
   let model = state.Model(..model, user: u)
 
-  let #(model, _eff) = component.update(model, UserClickedDetailedMonthView(my))
+  let #(model, _eff) =
+    component.update(
+      model,
+      ViewTransitionedToMonthlyDetail(ForwardNavigation, my),
+    )
 
   let assert MonthlyDetail(mp) = model.current_view
   assert monthly_payment.month_year_to_string(monthly_payment.get_month_year(mp))
@@ -106,7 +128,11 @@ pub fn update_click_detailed_month_view_missing_test() {
   let my = tempo_date.get_month_year(date)
 
   // Month doesn't exist for user
-  let #(model, _eff) = component.update(model, UserClickedDetailedMonthView(my))
+  let #(model, _eff) =
+    component.update(
+      model,
+      ViewTransitionedToMonthlyDetail(ForwardNavigation, my),
+    )
 
   assert model.current_view == AddPayment
 }
@@ -114,11 +140,69 @@ pub fn update_click_detailed_month_view_missing_test() {
 pub fn update_click_add_month_payment_test() {
   let model = create_mock_model()
   let #(model, _eff) =
-    component.update(model, UserClickedAddMonthPayment("2024-06-01"))
+    component.update(
+      model,
+      ViewTransitionedToAddMonthPayment(ForwardNavigation, "2024-06-01"),
+    )
 
   assert model.current_view == AddPayment
   assert model.form_date == "2024-06-01"
   assert model.form_today_toggle == False
+}
+
+pub fn update_user_clicked_monthly_view_triggers_transition_test() {
+  let model = create_mock_model()
+  let #(new_model, _eff) = component.update(model, UserClickedMonthlyView)
+
+  // Model is not synchronously changed because it delegates to View Transition effect
+  assert new_model.current_view == AddPayment
+}
+
+pub fn update_user_clicked_monthly_view_when_already_on_summary_test() {
+  let model = create_mock_model()
+  let #(model, _eff) =
+    component.update(model, ViewTransitionedToMonthlySummary(ForwardNavigation))
+
+  let #(new_model, _eff) = component.update(model, UserClickedMonthlyView)
+  assert new_model.current_view == MonthlySummary
+  assert new_model.back_view == [AddPayment]
+}
+
+pub fn update_user_clicked_back_when_stack_empty_test() {
+  let model = create_mock_model()
+  let #(new_model, _eff) = component.update(model, UserClickedBack)
+
+  assert new_model.current_view == AddPayment
+  assert new_model.back_view == []
+}
+
+pub fn update_user_clicked_add_payment_when_already_on_add_payment_test() {
+  let model = create_mock_model()
+  let #(new_model, _eff) = component.update(model, UserClickedAddPayment)
+
+  assert new_model.current_view == AddPayment
+  assert new_model.back_view == []
+}
+
+pub fn update_user_clicked_add_month_payment_triggers_transition_test() {
+  let model = create_mock_model()
+  let #(new_model, _eff) =
+    component.update(model, UserClickedAddMonthPayment("2024-06-01"))
+
+  // Model is not synchronously changed because it delegates to View Transition effect
+  assert new_model.current_view == AddPayment
+  assert new_model.form_date == ""
+}
+
+pub fn update_user_clicked_detailed_month_view_triggers_transition_test() {
+  let model = create_mock_model()
+  let assert Ok(date) = tempo_date.from_string("2024-06-15")
+  let my = tempo_date.get_month_year(date)
+  let #(new_model, _eff) =
+    component.update(model, UserClickedDetailedMonthView(my))
+
+  // Model is not synchronously changed because it delegates to View Transition effect
+  assert new_model.current_view == AddPayment
 }
 
 // --- FORM INPUT TESTS ---

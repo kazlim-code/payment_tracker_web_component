@@ -182,16 +182,27 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(model, effect.none())
     }
     ViewTransitionedToAddPayment(navigation_direction) -> {
-      let back_view =
-        model |> state.update_back_stack(direction: navigation_direction)
-      let model = state.Model(..model, current_view: AddPayment, back_view:)
-      #(model, effect.none())
+      case model.current_view {
+        AddPayment -> #(model, effect.none())
+        _ -> {
+          let back_view =
+            model |> state.update_back_stack(direction: navigation_direction)
+          let model = state.Model(..model, current_view: AddPayment, back_view:)
+          #(model, effect.none())
+        }
+      }
     }
     ViewTransitionedToMonthlySummary(navigation_direction) -> {
-      let back_view =
-        model |> state.update_back_stack(direction: navigation_direction)
-      let model = state.Model(..model, current_view: MonthlySummary, back_view:)
-      #(model, effect.none())
+      case model.current_view {
+        MonthlySummary -> #(model, effect.none())
+        _ -> {
+          let back_view =
+            model |> state.update_back_stack(direction: navigation_direction)
+          let model =
+            state.Model(..model, current_view: MonthlySummary, back_view:)
+          #(model, effect.none())
+        }
+      }
     }
     ViewTransitionedToMonthlyDetail(navigation_direction, month_year) -> {
       let back_view =
@@ -215,13 +226,18 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         direction: transition.Backward,
       ),
     )
-    UserClickedAddPayment -> #(
-      model,
-      trigger_transition(
-        using: ViewTransitionedToAddPayment(state.ForwardNavigation),
-        direction: transition.Backward,
-      ),
-    )
+    UserClickedAddPayment -> {
+      case model.current_view {
+        AddPayment -> #(model, effect.none())
+        _ -> #(
+          model,
+          trigger_transition(
+            using: ViewTransitionedToAddPayment(state.ForwardNavigation),
+            direction: transition.Backward,
+          ),
+        )
+      }
+    }
     UserClickedDetailedMonthView(month_year) -> #(
       model,
       trigger_transition(
@@ -233,31 +249,35 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       ),
     )
     UserClickedBack -> {
-      let previous_view = model |> state.get_previous_view
-      let direction = case previous_view {
-        Some(to) ->
-          get_transition_direction(to:, from: Some(model.current_view))
-        None -> transition.None
+      case model |> state.get_previous_view {
+        None -> #(model, effect.none())
+        Some(to) -> {
+          let direction =
+            get_transition_direction(to:, from: Some(model.current_view))
+          let view_transition =
+            get_view_transition(to, state.BackwardNavigation)
+          #(model, trigger_transition(using: view_transition, direction:))
+        }
       }
-      let view_transition =
-        previous_view
-        |> option.unwrap(model.current_view)
-        |> get_view_transition(state.BackwardNavigation)
-      #(model, trigger_transition(using: view_transition, direction:))
     }
     UserClickedMonthlyView -> {
-      let direction =
-        get_transition_direction(
-          to: MonthlySummary,
-          from: Some(model.current_view),
-        )
-      #(
-        model,
-        trigger_transition(
-          using: ViewTransitionedToMonthlySummary(state.ForwardNavigation),
-          direction:,
-        ),
-      )
+      case model.current_view {
+        MonthlySummary -> #(model, effect.none())
+        _ -> {
+          let direction =
+            get_transition_direction(
+              to: MonthlySummary,
+              from: Some(model.current_view),
+            )
+          #(
+            model,
+            trigger_transition(
+              using: ViewTransitionedToMonthlySummary(state.ForwardNavigation),
+              direction:,
+            ),
+          )
+        }
+      }
     }
     // --- Add Payment View ---
     UserBlurredAmount(amount) -> #(input_amount(amount, model), effect.none())

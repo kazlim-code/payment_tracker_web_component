@@ -370,7 +370,7 @@ if (typeof document !== "undefined") {
  */
 export function startViewTransition(updateDom, direction) {
   // Ensure feature exists
-  if (!document.startViewTransition) {
+  if (typeof document === "undefined" || !document.startViewTransition) {
     updateDom();
     return;
   }

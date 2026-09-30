@@ -480,3 +480,33 @@ pub fn update_clicked_sort_column_test() {
   assert model.detail_sort_by == sort.Name
   assert model.detail_sort_direction == sort.Desc
 }
+
+pub fn summary_view_month_order_latest_to_oldest_test() {
+  let model = create_mock_model()
+  let assert Ok(d1) = tempo_date.from_string("2024-01-10")
+  let assert Ok(d2) = tempo_date.from_string("2024-11-05")
+  let assert Ok(d3) = tempo_date.from_string("2023-08-15")
+
+  let p1 = payment.new("Jan") |> payment.with_payment_date(Some(d1))
+  let p2 = payment.new("Nov") |> payment.with_payment_date(Some(d2))
+  let p3 = payment.new("Aug") |> payment.with_payment_date(Some(d3))
+
+  let user =
+    model.user
+    |> user.add_payment(p1)
+    |> user.add_payment(p2)
+    |> user.add_payment(p3)
+    |> user.sync_monthly_payments
+
+  let model = state.Model(..model, user:)
+
+  let month_strings =
+    user.get_monthly_payments(model.user)
+    |> list.map(fn(mp) {
+      mp
+      |> monthly_payment.get_month_year
+      |> monthly_payment.month_year_to_string
+    })
+
+  assert month_strings == ["2024-11", "2024-01", "2023-08"]
+}

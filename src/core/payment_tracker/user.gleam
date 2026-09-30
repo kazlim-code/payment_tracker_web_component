@@ -145,10 +145,23 @@ pub fn get_payments_for_month(
   }
 }
 
-/// Gets all of the users monthly payments.
+/// Gets all of the users monthly payments ordered by month and year in the
+/// specified ascending or descending direction.
 ///
-pub fn get_monthly_payments(from user: User) {
+pub fn get_sorted_monthly_payments(
+  from user: User,
+  direction direction: sort.Direction,
+) -> List(MonthlyPayment) {
   user.monthly_payments
+  |> monthly_payment.sort_by_month_year(direction)
+}
+
+/// Gets all of the users monthly payments ordered from latest month/year to
+/// oldest.
+///
+pub fn get_monthly_payments(from user: User) -> List(MonthlyPayment) {
+  user
+  |> get_sorted_monthly_payments(direction: sort.Desc)
 }
 
 /// Get a users individual monthly payment if it exists.

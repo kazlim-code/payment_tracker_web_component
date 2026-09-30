@@ -2,12 +2,14 @@
 //// month.
 ////
 
+import core/payment_tracker/internal/sort
 import gleam/dynamic/decode
 import gleam/float
 import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/order
 import gleam/regexp
 import gleam/result
 import gleam/set.{type Set}
@@ -17,6 +19,7 @@ import gleam/time/timestamp.{type Timestamp}
 import tempo.{type MonthYear, MonthYear}
 import tempo/date
 import tempo/datetime
+import tempo/month_year
 
 // IMPORTS ---------------------------------------------------------------------
 
@@ -148,6 +151,39 @@ pub fn calculate_owed(monthly_payment: MonthlyPayment) -> Float {
   let transfer_amount = monthly_payment.home_loan_transfer |> option.unwrap(0.0)
 
   home_loan_amount /. 2.0 +. total -. transfer_amount
+}
+
+/// Compares two monthly payments chronologically by their month and year.
+///
+pub fn compare(a: MonthlyPayment, to b: MonthlyPayment) -> order.Order {
+  month_year.compare(a.month_year, to: b.month_year)
+}
+
+/// Changes the direction of the monthly payments list based on ascending or
+/// descending order.
+///
+pub fn sort_by_direction(
+  monthly_payments: List(MonthlyPayment),
+  direction: sort.Direction,
+) -> List(MonthlyPayment) {
+  case direction {
+    sort.Asc -> monthly_payments
+    sort.Desc -> list.reverse(monthly_payments)
+  }
+}
+
+/// Sorts monthly payments chronologically by their month and year using
+/// ascending or descending order.
+///
+pub fn sort_by_month_year(
+  monthly_payments: List(MonthlyPayment),
+  direction: sort.Direction,
+) -> List(MonthlyPayment) {
+  {
+    use mp1, mp2 <- list.sort(monthly_payments)
+    compare(mp1, to: mp2)
+  }
+  |> sort_by_direction(direction)
 }
 
 /// Attempts to parse a string using tempo.parse_any and return the resulting

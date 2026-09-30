@@ -1,3 +1,4 @@
+import core/payment_tracker/internal/sort
 import core/payment_tracker/monthly_payment
 import core/payment_tracker/payment
 import core/payment_tracker/user
@@ -126,4 +127,87 @@ pub fn user_sync_integration_test() {
   let monthly_payments = user.get_monthly_payments(test_user)
   let assert Ok(mp) = list.first(monthly_payments)
   assert monthly_payment.get_total(mp) == Some(200.0)
+}
+
+pub fn get_monthly_payments_sorted_desc_test() {
+  let test_user = user.new("Test", "tester")
+  let assert Ok(d_june) = date.from_string("2024-06-15")
+  let assert Ok(d_nov) = date.from_string("2023-11-20")
+  let assert Ok(d_feb) = date.from_string("2025-02-10")
+
+  // Added out of chronological order: June 2024, Nov 2023, Feb 2025
+  let p1 = payment.new("June") |> payment.with_payment_date(Some(d_june))
+  let p2 = payment.new("Nov") |> payment.with_payment_date(Some(d_nov))
+  let p3 = payment.new("Feb") |> payment.with_payment_date(Some(d_feb))
+
+  let test_user =
+    test_user
+    |> user.add_payment(p1)
+    |> user.add_payment(p2)
+    |> user.add_payment(p3)
+    |> user.sync_monthly_payments
+
+  let month_strings =
+    user.get_monthly_payments(test_user)
+    |> list.map(fn(mp) {
+      mp
+      |> monthly_payment.get_month_year
+      |> monthly_payment.month_year_to_string
+    })
+
+  assert month_strings == ["2025-02", "2024-06", "2023-11"]
+}
+
+pub fn get_monthly_payments_empty_test() {
+  let test_user = user.new("Test", "tester")
+  assert user.get_monthly_payments(test_user) == []
+}
+
+pub fn get_monthly_payments_single_test() {
+  let test_user = user.new("Test", "tester")
+  let assert Ok(d_june) = date.from_string("2024-06-15")
+  let p = payment.new("June") |> payment.with_payment_date(Some(d_june))
+
+  let test_user =
+    test_user
+    |> user.add_payment(p)
+    |> user.sync_monthly_payments
+
+  let month_strings =
+    user.get_monthly_payments(test_user)
+    |> list.map(fn(mp) {
+      mp
+      |> monthly_payment.get_month_year
+      |> monthly_payment.month_year_to_string
+    })
+
+  assert month_strings == ["2024-06"]
+}
+
+pub fn get_sorted_monthly_payments_asc_test() {
+  let test_user = user.new("Test", "tester")
+  let assert Ok(d_june) = date.from_string("2024-06-15")
+  let assert Ok(d_nov) = date.from_string("2023-11-20")
+  let assert Ok(d_feb) = date.from_string("2025-02-10")
+
+  let p1 = payment.new("June") |> payment.with_payment_date(Some(d_june))
+  let p2 = payment.new("Nov") |> payment.with_payment_date(Some(d_nov))
+  let p3 = payment.new("Feb") |> payment.with_payment_date(Some(d_feb))
+
+  let test_user =
+    test_user
+    |> user.add_payment(p1)
+    |> user.add_payment(p2)
+    |> user.add_payment(p3)
+    |> user.sync_monthly_payments
+
+  let month_strings =
+    user.get_sorted_monthly_payments(test_user, sort.Asc)
+    |> list.map(fn(mp) {
+      mp
+      |> monthly_payment.get_month_year
+      |> monthly_payment.month_year_to_string
+    })
+
+  assert month_strings == ["2023-11", "2024-06", "2025-02"]
 }

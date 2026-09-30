@@ -385,3 +385,115 @@ export function startViewTransition(updateDom, direction) {
     console.error("❌ View transition failed to start:", e);
   });
 }
+
+// KEYBOARD NAVIGATION & FOCUS HELPERS
+
+/**
+ * Focuses an element inside the component's shadow root matching the selector.
+ * @param {string} selector
+ * @param {boolean} selectAll
+ * @param {boolean} clearValue
+ */
+export function focus_element(selector, selectAll, clearValue) {
+  if (typeof document === "undefined") return;
+  const tracker = document.querySelector("payment-tracker");
+  const root = tracker && tracker.shadowRoot ? tracker.shadowRoot : document;
+  const el = root.querySelector(selector);
+  if (el) {
+    if (clearValue && "value" in el) {
+      el.value = "";
+    }
+    el.focus();
+    if (selectAll && typeof el.select === "function") {
+      el.select();
+    }
+  }
+}
+
+/**
+ * Blurs the currently active element in the shadow DOM or document.
+ */
+export function blur_active_element() {
+  if (typeof document === "undefined") return;
+  const tracker = document.querySelector("payment-tracker");
+  const root = tracker && tracker.shadowRoot ? tracker.shadowRoot : document;
+  if (root.activeElement && typeof root.activeElement.blur === "function") {
+    root.activeElement.blur();
+  } else if (
+    document.activeElement &&
+    typeof document.activeElement.blur === "function"
+  ) {
+    document.activeElement.blur();
+  }
+}
+
+/**
+ * Attaches a global keyboard listener to window, calling the Gleam callback.
+ * @param {function} callback
+ */
+export function subscribe_keyboard(callback) {
+  if (typeof window === "undefined") return;
+
+  const normalCommandKeys = new Set([
+    "c",
+    "d",
+    "p",
+    "i",
+    "s",
+    "t",
+    "j",
+    "k",
+    "h",
+    "l",
+    "g",
+    "m",
+    "[",
+    "]",
+    "{",
+    "}",
+    "/",
+    "Enter",
+    " ",
+    "?",
+    "Escape",
+  ]);
+
+  const handleKeyDown = (e) => {
+    const target = e.composedPath ? e.composedPath()[0] : e.target;
+    const isInput =
+      target &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable);
+
+    // In normal mode (not in input), prevent browser default action for all navigation/command keys
+    // This prevents the key from being typed into the newly focused field!
+    if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (normalCommandKeys.has(e.key)) {
+        e.preventDefault();
+      }
+    }
+
+    // In input, prevent default on Escape, or Ctrl+Enter / Shift+Enter
+    if (isInput) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+      }
+      if (e.key === "Enter" && (e.ctrlKey || e.shiftKey)) {
+        e.preventDefault();
+      }
+    }
+
+    callback(
+      e.key,
+      Boolean(e.ctrlKey),
+      Boolean(e.altKey),
+      Boolean(e.shiftKey),
+      Boolean(e.metaKey),
+      Boolean(isInput),
+    );
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+}
+

@@ -23,9 +23,13 @@ This document tracks the current status of features, planned improvements, and t
 - [x] Add show/hide button for debug devtools_panel when run via dev.gleam
 
 ### ⌨️ Keyboard Navigation (Vim-like)
-- [ ] Implement Vim-like keyboard shortcuts (`j`, `k`, `i`, `/`, `esc`).
+- [x] Implement Vim-like keyboard shortcuts (`cp`, `cd`, `p`, `d`, `s`, `t`, `[]`, `{}`, `j`, `k`, `/`, `gp`, `gs`, `gm`, `esc`, `<CR>`, `<C-Enter>`, `<S-Enter>`).
+- [x] Add visual mode indicators (`-- NORMAL --`, `-- INSERT --`, `-- PENDING --`) in bottom status bar.
 - [ ] Add visual focus states for keyboard navigation.
-- [ ] *Status: Currently hidden in UI until implementation starts.*
+- [ ] **GUI Keymap Editor:** Settings modal/view to customize and persist user keybindings.
+- [ ] **Dynamic Bottom Bar:** Context-aware key hints depending on focused input, with global action overlay.
+- [ ] **Keymap Cheatsheet Modal:** Triggered by `?` showing all available motions.
+- [ ] **Advanced Mode Badge Animations:** Rich CSS transition/animation when switching between Normal and Insert modes.
 
 ### 📝 Form Polish & UX
 - [x] **Rapid Entry:** The "Add Payment" form does NOT reset after submission to facilitate adding multiple similar payments.

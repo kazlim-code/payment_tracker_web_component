@@ -3,6 +3,7 @@
 ////
 
 import core/payment_tracker/internal/sort
+import core/payment_tracker/keymap
 import core/payment_tracker/monthly_payment.{type MonthlyPayment}
 import core/payment_tracker/payment.{type Payment}
 import core/payment_tracker/user
@@ -26,16 +27,16 @@ import tempo/instant
 import ui/state.{
   type Dialog, type Model, type MonthlyBalance, AddPayment,
   AutomatedBankTransfer, DebugTransitionEnd, Dialog, HomeLoan, MonthlyDetail,
-  MonthlySummary, NoDialog, UserBlurredAmount, UserChangedPaymentDate,
-  UserChangedSearchQuery, UserClearedSearchQuery, UserClickedAddMonthPayment,
-  UserClickedAddPayment, UserClickedBack, UserClickedDetailedMonthView,
-  UserClickedEditHomeLoanAmount, UserClickedEditPayment,
-  UserClickedEditTransferAmount, UserClickedMonthlyView, UserClickedSortColumn,
-  UserClickedToggleDebug, UserClosedDialog, UserDecrementedAmount,
-  UserDeletedPayment, UserIncrementedAmount, UserInputPaymentName,
-  UserSubmittedEditMonthlyBalance, UserSubmittedEditPayment,
-  UserSubmittedPayment, UserToggledMonthlyPaymentPaid, UserToggledShared,
-  UserToggledSharedPayment, UserToggledToday,
+  MonthlySummary, NoDialog, UserBlurredAmount, UserBlurredTarget,
+  UserChangedPaymentDate, UserChangedSearchQuery, UserClearedSearchQuery,
+  UserClickedAddMonthPayment, UserClickedAddPayment, UserClickedBack,
+  UserClickedDetailedMonthView, UserClickedEditHomeLoanAmount,
+  UserClickedEditPayment, UserClickedEditTransferAmount, UserClickedMonthlyView,
+  UserClickedSortColumn, UserClickedToggleDebug, UserClosedDialog,
+  UserDecrementedAmount, UserDeletedPayment, UserFocusedTarget,
+  UserIncrementedAmount, UserInputPaymentName, UserSubmittedEditMonthlyBalance,
+  UserSubmittedEditPayment, UserSubmittedPayment, UserToggledMonthlyPaymentPaid,
+  UserToggledShared, UserToggledSharedPayment, UserToggledToday,
 }
 
 import ui/styles
@@ -124,7 +125,10 @@ fn add_payment_form(with model: Model) -> Element(state.Msg) {
           [
             attribute.name("payment-name"),
             attribute.placeholder("Add a description..."),
+            attribute.value(model.form_name),
             event.on_input(UserInputPaymentName),
+            event.on_focus(UserFocusedTarget(keymap.DescriptionTextarea)),
+            event.on_blur(UserBlurredTarget),
           ],
           model.form_name,
         ),
@@ -151,13 +155,13 @@ fn add_payment_price(with price: Float) -> Element(state.Msg) {
     html.span([attribute.class("symbol")], [html.text("$")]),
     html.input([
       attribute.value(price |> float_to_padded_string),
-      attribute.autofocus(True),
       attribute.class(""),
       attribute.min("0"),
       attribute.id("price"),
       attribute.name("payment-price"),
       attribute.placeholder("0.00"),
       attribute.step("0.01"),
+      event.on_focus(UserFocusedTarget(keymap.PriceInput)),
       on_blur_with_value(UserBlurredAmount),
       type_("number"),
     ]),
@@ -260,6 +264,8 @@ fn calendar_picker(
       attribute.readonly(readonly),
       type_("date"),
       attribute.value(value),
+      event.on_focus(UserFocusedTarget(keymap.DateInput)),
+      event.on_blur(UserBlurredTarget),
       event.on_change(fn(date) { UserChangedPaymentDate(date) }),
     ]),
   ])
@@ -646,6 +652,8 @@ fn detailed_month_table(
             attribute.value(model.detail_search_query),
             attribute.aria_label("Search payments"),
             event.on_input(UserChangedSearchQuery),
+            event.on_focus(UserFocusedTarget(keymap.TableSearchInput)),
+            event.on_blur(UserBlurredTarget),
             attribute.class("search-input text-sm"),
           ]),
           case model.detail_search_query != "" {
@@ -1453,14 +1461,29 @@ fn header_view(model: Model) -> Element(state.Msg) {
 /// incomplete and not yet implemented.
 ///
 fn footer_view(model: Model) -> Element(state.Msg) {
+  let mode_badge = case model.vim_mode {
+    keymap.NormalMode ->
+      case model.pending_key_prefix {
+        Some(prefix) ->
+          html.span([attribute.class("vim-mode-badge pending")], [
+            html.text("-- " <> string.uppercase(prefix) <> " --"),
+          ])
+        None ->
+          html.span([attribute.class("vim-mode-badge normal")], [
+            html.text("-- NORMAL --"),
+          ])
+      }
+    keymap.InsertMode(_) ->
+      html.span([attribute.class("vim-mode-badge insert")], [
+        html.text("-- INSERT --"),
+      ])
+  }
+
   html.footer([attribute.class("vim-footer")], [
     html.div([attribute.class("flex justify-between w-full")], [
       html.div([attribute.class("flex items-center gap-md")], [
-        hint("[j]", "Next"),
-        hint("[k]", "Prev"),
-        hint("[i]", "Entry"),
-        hint("[/]", "Search"),
-        hint("[esc]", "Summary"),
+        mode_badge,
+        ..footer_hints(model)
       ]),
       html.div(
         [
@@ -1475,6 +1498,46 @@ fn footer_view(model: Model) -> Element(state.Msg) {
       ),
     ]),
   ])
+}
+
+fn footer_hints(model: Model) -> List(Element(state.Msg)) {
+  let has_months = !list.is_empty(user.get_monthly_payments(model.user))
+  case model.current_view {
+    AddPayment -> {
+      let view_hint = case has_months {
+        True -> hint("[gs/gm]", "View")
+        False -> hint("[gs]", "Summary")
+      }
+      [
+        hint("[j/k]", "Nav"),
+        hint("[cp/cd]", "Clear"),
+        hint("[p/d]", "Focus"),
+        hint("[s/t]", "Toggle"),
+        hint("[[]/[]]", "Day"),
+        hint("[{/}]", "Month"),
+        view_hint,
+        hint("[esc]", "Normal"),
+      ]
+    }
+    MonthlySummary -> {
+      let view_hint = case has_months {
+        True -> hint("[gp/gm]", "View")
+        False -> hint("[gp]", "Payment")
+      }
+      [
+        hint("[j/k]", "Nav"),
+        hint("[l/enter]", "Open"),
+        hint("[h/esc]", "Back"),
+        view_hint,
+      ]
+    }
+    MonthlyDetail(_) -> [
+      hint("[j/k]", "Nav"),
+      hint("[/]", "Search"),
+      hint("[h/esc]", "Back"),
+      hint("[gp/gs]", "View"),
+    ]
+  }
 }
 
 /// Renders a back button that emits the provided message.

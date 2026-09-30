@@ -2,6 +2,9 @@
 ////
 
 import core/payment_tracker/internal/sort
+import core/payment_tracker/keymap.{
+  type FocusTarget, type KeyEvent, type Keymap, type VimMode, NormalMode,
+}
 import core/payment_tracker/monthly_payment.{type MonthlyPayment}
 import core/payment_tracker/payment.{type Payment}
 import core/payment_tracker/user.{type User}
@@ -95,6 +98,10 @@ pub type Model {
     detail_search_query: String,
     detail_sort_by: sort.Field,
     detail_sort_direction: sort.Direction,
+    // Vim & Keyboard Navigation
+    keymap: Keymap,
+    pending_key_prefix: Option(String),
+    vim_mode: VimMode,
   )
 }
 
@@ -137,6 +144,9 @@ pub type Msg {
   UserChangedSearchQuery(String)
   UserClearedSearchQuery
   UserClickedSortColumn(sort.Field)
+  UserBlurredTarget
+  UserFocusedTarget(FocusTarget)
+  UserPressedKey(key_event: KeyEvent, in_input: Bool)
   ViewTransitionedToAddPayment(NavigationDirection)
   ViewTransitionedToAddMonthPayment(NavigationDirection, String)
   ViewTransitionedToMonthlySummary(NavigationDirection)
@@ -182,6 +192,9 @@ pub fn init(storage storage: StorageConfig, query uri_query: Bool) -> Model {
     detail_search_query: "",
     detail_sort_by: sort.Date,
     detail_sort_direction: sort.Desc,
+    keymap: keymap.default_keymap(),
+    pending_key_prefix: None,
+    vim_mode: NormalMode,
   )
 }
 

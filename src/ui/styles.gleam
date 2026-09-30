@@ -906,6 +906,34 @@ pub fn base() -> Element(msg) {
       text-transform: uppercase;
     }
 
+    .vim-mode-badge {
+      border: 1px solid var(--border-neutral);
+      border-radius: 0;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      margin-right: 1rem;
+      padding: 2px 6px;
+      text-transform: uppercase;
+    }
+
+    .vim-mode-badge.normal {
+      background: var(--surface-container-low);
+      color: var(--on-surface-variant);
+    }
+
+    .vim-mode-badge.insert {
+      background: var(--surface-container-high);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .vim-mode-badge.pending {
+      background: var(--surface-container-high);
+      border-color: var(--tertiary);
+      color: var(--tertiary);
+    }
+
     /* Entry View Header */
     .view-header {
       align-items: center;

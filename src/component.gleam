@@ -1,5 +1,6 @@
 import core/payment_tracker/internal/sort
 import core/payment_tracker/internal/utils
+import core/payment_tracker/keymap
 import core/payment_tracker/monthly_payment
 import core/payment_tracker/payment
 import core/payment_tracker/user
@@ -9,6 +10,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/float
 import gleam/io
+import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
@@ -16,23 +18,26 @@ import lustre
 import lustre/component
 import lustre/effect.{type Effect}
 import plinth/javascript/global
+import tempo.{type Date}
+import tempo/date as tempo_date
 import tempo/instant
 import ui/state.{
   type Model, type Msg, AddPayment, AutomatedBankTransfer, DebugTransitionEnd,
   HomeLoan, MonthlyDetail, MonthlySummary, NoDialog, ParentUpdatedDebug,
   ParentUpdatedDemo, ParentUpdatedStorageBackend, PaymentData,
-  StorageUpdatedUser, UserBlurredAmount, UserChangedPaymentDate,
-  UserChangedSearchQuery, UserClearedSearchQuery, UserClearedSuccessFeedback,
-  UserClickedAddMonthPayment, UserClickedAddPayment, UserClickedBack,
-  UserClickedDetailedMonthView, UserClickedEditHomeLoanAmount,
+  StorageUpdatedUser, UserBlurredAmount, UserBlurredTarget,
+  UserChangedPaymentDate, UserChangedSearchQuery, UserClearedSearchQuery,
+  UserClearedSuccessFeedback, UserClickedAddMonthPayment, UserClickedAddPayment,
+  UserClickedBack, UserClickedDetailedMonthView, UserClickedEditHomeLoanAmount,
   UserClickedEditPayment, UserClickedEditTransferAmount, UserClickedMonthlyView,
   UserClickedSortColumn, UserClickedToggleDebug, UserClosedDialog,
-  UserDecrementedAmount, UserDeletedPayment, UserIncrementedAmount,
-  UserInputPaymentName, UserSubmittedEditMonthlyBalance,
-  UserSubmittedEditPayment, UserSubmittedPayment, UserToggledMonthlyPaymentPaid,
-  UserToggledShared, UserToggledSharedPayment, UserToggledToday,
-  ViewTransitionedToAddMonthPayment, ViewTransitionedToAddPayment,
-  ViewTransitionedToMonthlyDetail, ViewTransitionedToMonthlySummary,
+  UserDecrementedAmount, UserDeletedPayment, UserFocusedTarget,
+  UserIncrementedAmount, UserInputPaymentName, UserPressedKey,
+  UserSubmittedEditMonthlyBalance, UserSubmittedEditPayment,
+  UserSubmittedPayment, UserToggledMonthlyPaymentPaid, UserToggledShared,
+  UserToggledSharedPayment, UserToggledToday, ViewTransitionedToAddMonthPayment,
+  ViewTransitionedToAddPayment, ViewTransitionedToMonthlyDetail,
+  ViewTransitionedToMonthlySummary,
 }
 import ui/storage/factory as storage_factory
 import ui/transition
@@ -78,7 +83,10 @@ pub fn register_using_uri_query() -> lustre.App(Nil, Model, Msg) {
 }
 
 fn init(_: Nil) -> #(Model, Effect(state.Msg)) {
-  #(state.init(storage: storage.LocalStorage, query: False), effect.none())
+  #(
+    state.init(storage: storage.LocalStorage, query: False),
+    keyboard_subscription_effect(),
+  )
 }
 
 pub fn init_with_flags(
@@ -540,6 +548,208 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.none(),
       )
     }
+    UserFocusedTarget(target) -> {
+      #(
+        state.Model(..model, vim_mode: keymap.InsertMode(target)),
+        effect.none(),
+      )
+    }
+    UserBlurredTarget -> {
+      #(state.Model(..model, vim_mode: keymap.NormalMode), effect.none())
+    }
+    UserPressedKey(key_event, in_input) -> {
+      let current_mode = case in_input {
+        True ->
+          case model.vim_mode {
+            keymap.InsertMode(t) -> keymap.InsertMode(t)
+            keymap.NormalMode -> keymap.InsertMode(keymap.DescriptionTextarea)
+          }
+        False -> keymap.NormalMode
+      }
+      let #(resolved_action, new_prefix) =
+        keymap.resolve(
+          model.keymap,
+          key_event,
+          current_mode,
+          model.pending_key_prefix,
+        )
+      let model = state.Model(..model, pending_key_prefix: new_prefix)
+      case resolved_action {
+        Some(keymap.FocusTarget(target)) -> {
+          let selector = keymap.focus_target_to_selector(target)
+          let select_all = target == keymap.PriceInput
+          let model = state.Model(..model, vim_mode: keymap.InsertMode(target))
+          #(model, focus_effect(selector, select_all, False))
+        }
+        Some(keymap.ClearAndFocusTarget(target)) -> {
+          let selector = keymap.focus_target_to_selector(target)
+          let select_all = target == keymap.PriceInput
+          let model = case target {
+            keymap.PriceInput -> state.Model(..model, form_amount: 0.0)
+            keymap.DescriptionTextarea -> state.Model(..model, form_name: "")
+            _ -> model
+          }
+          let model = state.Model(..model, vim_mode: keymap.InsertMode(target))
+          #(model, focus_effect(selector, select_all, True))
+        }
+        Some(keymap.ToggleShared) -> {
+          #(
+            state.Model(..model, form_shared_toggle: !model.form_shared_toggle),
+            effect.none(),
+          )
+        }
+        Some(keymap.ToggleToday) -> {
+          #(
+            state.Model(..model, form_today_toggle: !model.form_today_toggle),
+            effect.none(),
+          )
+        }
+        Some(keymap.IncrementDay) -> {
+          let model = adjust_form_date(model, days: 1)
+          #(model, effect.none())
+        }
+        Some(keymap.DecrementDay) -> {
+          let model = adjust_form_date(model, days: -1)
+          #(model, effect.none())
+        }
+        Some(keymap.IncrementMonth) -> {
+          let model = adjust_form_month(model, months: 1)
+          #(model, effect.none())
+        }
+        Some(keymap.DecrementMonth) -> {
+          let model = adjust_form_month(model, months: -1)
+          #(model, effect.none())
+        }
+        Some(keymap.NavLeft) -> {
+          case model.current_view {
+            AddPayment -> #(decrement_amount(model), effect.none())
+            _ -> update(model, UserClickedBack)
+          }
+        }
+        Some(keymap.NavRight) -> {
+          case model.current_view {
+            AddPayment -> #(increment_amount(model), effect.none())
+            MonthlySummary -> {
+              case user.get_monthly_payments(model.user) |> list.first {
+                Ok(first_mp) -> {
+                  let month_year = monthly_payment.get_month_year(first_mp)
+                  update(model, UserClickedDetailedMonthView(month_year))
+                }
+                Error(_) -> #(model, effect.none())
+              }
+            }
+            MonthlyDetail(_) -> #(model, effect.none())
+          }
+        }
+        Some(keymap.NavDown) | Some(keymap.NextRow) -> {
+          case model.current_view {
+            AddPayment -> {
+              case model.vim_mode {
+                keymap.InsertMode(keymap.PriceInput) -> {
+                  let selector =
+                    keymap.focus_target_to_selector(keymap.DescriptionTextarea)
+                  let model =
+                    state.Model(
+                      ..model,
+                      vim_mode: keymap.InsertMode(keymap.DescriptionTextarea),
+                    )
+                  #(model, focus_effect(selector, False, False))
+                }
+                _ -> {
+                  let selector =
+                    keymap.focus_target_to_selector(keymap.PriceInput)
+                  let model =
+                    state.Model(
+                      ..model,
+                      vim_mode: keymap.InsertMode(keymap.PriceInput),
+                    )
+                  #(model, focus_effect(selector, True, False))
+                }
+              }
+            }
+            MonthlySummary -> {
+              case user.get_monthly_payments(model.user) |> list.first {
+                Ok(first_mp) -> {
+                  let month_year = monthly_payment.get_month_year(first_mp)
+                  update(model, UserClickedDetailedMonthView(month_year))
+                }
+                Error(_) -> #(model, effect.none())
+              }
+            }
+            MonthlyDetail(_) -> #(model, effect.none())
+          }
+        }
+        Some(keymap.NavUp) | Some(keymap.PreviousRow) -> {
+          case model.current_view {
+            AddPayment -> {
+              let selector = keymap.focus_target_to_selector(keymap.PriceInput)
+              let model =
+                state.Model(
+                  ..model,
+                  vim_mode: keymap.InsertMode(keymap.PriceInput),
+                )
+              #(model, focus_effect(selector, True, False))
+            }
+            _ -> update(model, UserClickedBack)
+          }
+        }
+        Some(keymap.SearchTable) -> {
+          let selector =
+            keymap.focus_target_to_selector(keymap.TableSearchInput)
+          let model =
+            state.Model(
+              ..model,
+              vim_mode: keymap.InsertMode(keymap.TableSearchInput),
+            )
+          #(model, focus_effect(selector, False, False))
+        }
+        Some(keymap.SubmitPayment) -> {
+          submit_payment_from_model(model)
+        }
+        Some(keymap.SubmitAndNavigateToMonth) -> {
+          submit_and_navigate_to_month(model)
+        }
+        Some(keymap.GoToAddPayment) -> {
+          case model.current_view {
+            AddPayment -> #(model, effect.none())
+            _ -> update(model, UserClickedAddPayment)
+          }
+        }
+        Some(keymap.GoToSummary) -> {
+          case model.current_view {
+            MonthlySummary -> #(model, effect.none())
+            _ -> update(model, UserClickedMonthlyView)
+          }
+        }
+        Some(keymap.GoToMonthDetail) -> {
+          case model.current_view {
+            MonthlyDetail(_) -> #(model, effect.none())
+            _ -> {
+              case user.get_monthly_payments(model.user) |> list.first {
+                Ok(first_mp) -> {
+                  let month_year = monthly_payment.get_month_year(first_mp)
+                  update(model, UserClickedDetailedMonthView(month_year))
+                }
+                Error(_) -> #(model, effect.none())
+              }
+            }
+          }
+        }
+        Some(keymap.ShowHelp) -> {
+          #(model, effect.none())
+        }
+        Some(keymap.ExitInsertMode) -> {
+          let model =
+            state.Model(
+              ..model,
+              vim_mode: keymap.NormalMode,
+              pending_key_prefix: None,
+            )
+          #(model, blur_effect())
+        }
+        None -> #(model, effect.none())
+      }
+    }
   }
 }
 
@@ -605,6 +815,134 @@ fn trigger_transition(
 
 // --- Helpers ---
 
+fn get_effective_date(model: Model) -> Date {
+  case model.form_today_toggle, string.is_empty(model.form_date) {
+    False, False ->
+      tempo_date.from_string(model.form_date)
+      |> result.unwrap(tempo_date.current_local())
+    _, _ -> tempo_date.current_local()
+  }
+}
+
+fn adjust_form_date(model: Model, days days_offset: Int) -> Model {
+  let current = get_effective_date(model)
+  let updated = case days_offset >= 0 {
+    True -> tempo_date.add(current, days: days_offset)
+    False -> tempo_date.subtract(current, days: -days_offset)
+  }
+  state.Model(
+    ..model,
+    form_date: tempo_date.to_string(updated),
+    form_today_toggle: False,
+  )
+}
+
+fn adjust_form_month(model: Model, months months_offset: Int) -> Model {
+  let current = get_effective_date(model)
+  let #(year, month, day) = tempo_date.to_tuple(current)
+  let total_months = year * 12 + month - 1 + months_offset
+  let new_year = total_months / 12
+  let new_month = { total_months % 12 } + 1
+  let target_day = case day {
+    31
+      if new_month == 4 || new_month == 6 || new_month == 9 || new_month == 11
+    -> 30
+    _ if new_month == 2 && day > 28 -> {
+      let is_leap =
+        { new_year % 4 == 0 && new_year % 100 != 0 } || new_year % 400 == 0
+      case is_leap {
+        True -> 29
+        False -> 28
+      }
+    }
+    d -> d
+  }
+  let updated = case tempo_date.from_tuple(#(new_year, new_month, target_day)) {
+    Ok(d) -> d
+    Error(_) -> current
+  }
+  state.Model(
+    ..model,
+    form_date: tempo_date.to_string(updated),
+    form_today_toggle: False,
+  )
+}
+
+fn form_values_from_model(model: Model) -> List(#(String, String)) {
+  let effective_date = case
+    model.form_today_toggle,
+    string.is_empty(model.form_date)
+  {
+    False, False -> model.form_date
+    _, _ -> tempo_date.current_local() |> tempo_date.to_string
+  }
+  [
+    #("payment-name", model.form_name),
+    #("payment-price", float.to_string(model.form_amount)),
+    #("payment-date", effective_date),
+  ]
+}
+
+fn submit_payment_from_model(model: Model) -> #(Model, Effect(Msg)) {
+  let values = form_values_from_model(model)
+  update(model, UserSubmittedPayment(values))
+}
+
+fn submit_and_navigate_to_month(model: Model) -> #(Model, Effect(Msg)) {
+  let effective_date = get_effective_date(model)
+  let month_year = tempo_date.get_month_year(effective_date)
+  let values = form_values_from_model(model)
+  let #(new_model, submit_eff) = update(model, UserSubmittedPayment(values))
+  let nav_eff =
+    trigger_transition(
+      using: ViewTransitionedToMonthlyDetail(
+        state.ForwardNavigation,
+        month_year,
+      ),
+      direction: transition.Forward,
+    )
+  #(new_model, effect.batch([submit_eff, nav_eff]))
+}
+
+fn focus_effect(
+  selector: String,
+  select_all: Bool,
+  clear_value: Bool,
+) -> Effect(Msg) {
+  use _dispatch <- effect.from
+  do_focus_element(selector, select_all, clear_value)
+}
+
+fn blur_effect() -> Effect(Msg) {
+  use _dispatch <- effect.from
+  do_blur_active_element()
+}
+
+fn keyboard_subscription_effect() -> Effect(Msg) {
+  use dispatch <- effect.from
+  do_subscribe_keyboard(fn(key, ctrl, alt, shift, meta, in_input) {
+    let modifiers = []
+    let modifiers = case ctrl {
+      True -> [keymap.Control, ..modifiers]
+      False -> modifiers
+    }
+    let modifiers = case alt {
+      True -> [keymap.Alt, ..modifiers]
+      False -> modifiers
+    }
+    let modifiers = case shift {
+      True -> [keymap.Shift, ..modifiers]
+      False -> modifiers
+    }
+    let modifiers = case meta {
+      True -> [keymap.Meta, ..modifiers]
+      False -> modifiers
+    }
+    let event = keymap.KeyEvent(key:, modifiers:)
+    dispatch(state.UserPressedKey(event, in_input:))
+  })
+}
+
 /// Returns the directional View Transition based on the current view and the
 /// new view it is transitioning to.
 ///
@@ -644,3 +982,18 @@ fn get_view_transition(
 
 @external(javascript, "./ffi.mjs", "get_attributes")
 fn do_get_attributes() -> Dynamic
+
+@external(javascript, "./ffi.mjs", "focus_element")
+fn do_focus_element(
+  selector: String,
+  select_all: Bool,
+  clear_value: Bool,
+) -> Nil
+
+@external(javascript, "./ffi.mjs", "blur_active_element")
+fn do_blur_active_element() -> Nil
+
+@external(javascript, "./ffi.mjs", "subscribe_keyboard")
+fn do_subscribe_keyboard(
+  callback: fn(String, Bool, Bool, Bool, Bool, Bool) -> Nil,
+) -> Nil

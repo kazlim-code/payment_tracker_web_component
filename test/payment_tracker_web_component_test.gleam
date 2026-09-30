@@ -1,5 +1,8 @@
 import component
 import core/payment_tracker/internal/sort
+import core/payment_tracker/keymap.{
+  Control, DescriptionTextarea, InsertMode, KeyEvent, NormalMode, PriceInput,
+}
 import core/payment_tracker/monthly_payment
 import core/payment_tracker/payment
 import core/payment_tracker/user
@@ -11,12 +14,13 @@ import tempo/date as tempo_date
 import tempo/instant
 import ui/state.{
   AddPayment, BackwardNavigation, Dialog, ForwardNavigation, MonthlyDetail,
-  MonthlySummary, NoDialog, UserBlurredAmount, UserChangedPaymentDate,
-  UserChangedSearchQuery, UserClearedSearchQuery, UserClickedAddMonthPayment,
-  UserClickedAddPayment, UserClickedBack, UserClickedDetailedMonthView,
-  UserClickedEditPayment, UserClickedMonthlyView, UserClickedSortColumn,
-  UserClosedDialog, UserDecrementedAmount, UserDeletedPayment,
-  UserIncrementedAmount, UserInputPaymentName, UserSubmittedPayment,
+  MonthlySummary, NoDialog, UserBlurredAmount, UserBlurredTarget,
+  UserChangedPaymentDate, UserChangedSearchQuery, UserClearedSearchQuery,
+  UserClickedAddMonthPayment, UserClickedAddPayment, UserClickedBack,
+  UserClickedDetailedMonthView, UserClickedEditPayment, UserClickedMonthlyView,
+  UserClickedSortColumn, UserClosedDialog, UserDecrementedAmount,
+  UserDeletedPayment, UserFocusedTarget, UserIncrementedAmount,
+  UserInputPaymentName, UserPressedKey, UserSubmittedPayment,
   UserToggledMonthlyPaymentPaid, UserToggledShared, UserToggledSharedPayment,
   UserToggledToday, ViewTransitionedToAddMonthPayment,
   ViewTransitionedToAddPayment, ViewTransitionedToMonthlyDetail,
@@ -509,4 +513,316 @@ pub fn summary_view_month_order_latest_to_oldest_test() {
     })
 
   assert month_strings == ["2024-11", "2024-01", "2023-08"]
+}
+
+// --- VIM & KEYBOARD NAVIGATION TESTS ---
+
+pub fn update_user_focused_target_sets_insert_mode_test() {
+  let model = create_mock_model()
+  let #(model, _eff) =
+    component.update(model, UserFocusedTarget(DescriptionTextarea))
+
+  assert model.vim_mode == InsertMode(DescriptionTextarea)
+}
+
+pub fn update_user_blurred_target_sets_normal_mode_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, vim_mode: InsertMode(PriceInput))
+  let #(model, _eff) = component.update(model, UserBlurredTarget)
+
+  assert model.vim_mode == NormalMode
+}
+
+pub fn update_user_pressed_key_toggle_shared_test() {
+  let model = create_mock_model()
+  assert model.form_shared_toggle == False
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("s", modifiers: []), in_input: False),
+    )
+  assert model.form_shared_toggle == True
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("s", modifiers: []), in_input: False),
+    )
+  assert model.form_shared_toggle == False
+}
+
+pub fn update_user_pressed_key_toggle_today_test() {
+  let model = create_mock_model()
+  assert model.form_today_toggle == True
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("t", modifiers: []), in_input: False),
+    )
+  assert model.form_today_toggle == False
+}
+
+pub fn update_user_pressed_key_day_increment_test() {
+  let model = create_mock_model()
+  let model =
+    state.Model(..model, form_date: "2024-06-15", form_today_toggle: False)
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("]", modifiers: []), in_input: False),
+    )
+
+  assert model.form_date == "2024-06-16"
+  assert model.form_today_toggle == False
+}
+
+pub fn update_user_pressed_key_day_decrement_test() {
+  let model = create_mock_model()
+  let model =
+    state.Model(..model, form_date: "2024-06-15", form_today_toggle: False)
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("[", modifiers: []), in_input: False),
+    )
+
+  assert model.form_date == "2024-06-14"
+  assert model.form_today_toggle == False
+}
+
+pub fn update_user_pressed_key_month_increment_test() {
+  let model = create_mock_model()
+  let model =
+    state.Model(..model, form_date: "2024-06-15", form_today_toggle: False)
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("}", modifiers: []), in_input: False),
+    )
+
+  assert model.form_date == "2024-07-15"
+  assert model.form_today_toggle == False
+}
+
+pub fn update_user_pressed_key_month_decrement_test() {
+  let model = create_mock_model()
+  let model =
+    state.Model(..model, form_date: "2024-06-15", form_today_toggle: False)
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("{", modifiers: []), in_input: False),
+    )
+
+  assert model.form_date == "2024-05-15"
+  assert model.form_today_toggle == False
+}
+
+pub fn update_user_pressed_key_focus_price_test() {
+  let model = create_mock_model()
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("p", modifiers: []), in_input: False),
+    )
+
+  assert model.vim_mode == InsertMode(PriceInput)
+}
+
+pub fn update_user_pressed_key_focus_description_test() {
+  let model = create_mock_model()
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("d", modifiers: []), in_input: False),
+    )
+
+  assert model.vim_mode == InsertMode(DescriptionTextarea)
+}
+
+pub fn update_user_pressed_key_clear_and_focus_description_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, form_name: "Old description")
+
+  // First press 'c' -> pending prefix
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("c", modifiers: []), in_input: False),
+    )
+  assert model.pending_key_prefix == Some("c")
+
+  // Then press 'd' -> clears description & enters insert mode
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("d", modifiers: []), in_input: False),
+    )
+
+  assert model.form_name == ""
+  assert model.pending_key_prefix == None
+  assert model.vim_mode == InsertMode(DescriptionTextarea)
+}
+
+pub fn update_user_pressed_key_clear_and_focus_price_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, form_amount: 150.0)
+
+  // First press 'c' -> pending prefix
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("c", modifiers: []), in_input: False),
+    )
+  assert model.pending_key_prefix == Some("c")
+
+  // Then press 'p' -> resets amount & enters insert mode
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("p", modifiers: []), in_input: False),
+    )
+
+  assert model.form_amount == 0.0
+  assert model.pending_key_prefix == None
+  assert model.vim_mode == InsertMode(PriceInput)
+}
+
+pub fn update_user_pressed_key_exit_insert_mode_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, vim_mode: InsertMode(PriceInput))
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("Escape", modifiers: []), in_input: True),
+    )
+
+  assert model.vim_mode == NormalMode
+}
+
+pub fn update_user_pressed_key_submit_payment_chord_test() {
+  let model = create_mock_model()
+  let model =
+    state.Model(
+      ..model,
+      form_name: "Coffee",
+      form_amount: 5.5,
+      form_date: "2024-06-01",
+      form_today_toggle: False,
+      vim_mode: InsertMode(DescriptionTextarea),
+    )
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("Enter", modifiers: [Control]), in_input: True),
+    )
+
+  assert list.length(user.get_payments(model.user)) == 1
+}
+
+pub fn update_user_pressed_key_nav_left_decrements_amount_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, form_amount: 5.0)
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("h", modifiers: []), in_input: False),
+    )
+
+  assert model.form_amount == 4.99
+}
+
+pub fn update_user_pressed_key_nav_right_increments_amount_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, form_amount: 5.0)
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("l", modifiers: []), in_input: False),
+    )
+
+  assert model.form_amount == 5.01
+}
+
+pub fn update_user_pressed_key_nav_down_cycles_focus_test() {
+  let model = create_mock_model()
+  // Normal mode -> j focuses PriceInput
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == InsertMode(PriceInput)
+
+  // From PriceInput -> j focuses DescriptionTextarea
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == InsertMode(DescriptionTextarea)
+}
+
+pub fn update_user_pressed_key_nav_up_focuses_price_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, vim_mode: InsertMode(DescriptionTextarea))
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("k", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == InsertMode(PriceInput)
+}
+
+pub fn update_user_pressed_key_gp_when_on_add_payment_is_noop_test() {
+  let model = create_mock_model()
+  assert model.current_view == AddPayment
+
+  // Press g then p
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("g", modifiers: []), in_input: False),
+    )
+  assert model.pending_key_prefix == Some("g")
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("p", modifiers: []), in_input: False),
+    )
+  assert model.current_view == AddPayment
+  assert model.back_view == []
+}
+
+pub fn update_user_pressed_key_gm_without_months_is_noop_test() {
+  let model = create_mock_model()
+  assert user.get_monthly_payments(model.user) == []
+
+  // Press g then m
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("g", modifiers: []), in_input: False),
+    )
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("m", modifiers: []), in_input: False),
+    )
+
+  // Should stay on AddPayment without any transition
+  assert model.current_view == AddPayment
+  assert model.back_view == []
 }

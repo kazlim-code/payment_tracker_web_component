@@ -10,7 +10,9 @@ import core/payment_tracker/user
 import core/storage.{LocalStorage}
 import gleam/list
 import gleam/option.{None, Some}
+import gleam/string
 import gleeunit
+import lustre/element
 import tempo/date as tempo_date
 import tempo/instant
 import ui/state.{
@@ -27,6 +29,7 @@ import ui/state.{
   ViewTransitionedToAddPayment, ViewTransitionedToMonthlyDetail,
   ViewTransitionedToMonthlySummary,
 }
+import ui/view
 
 pub fn main() -> Nil {
   gleeunit.main()
@@ -941,4 +944,22 @@ pub fn update_user_pressed_key_gm_without_months_is_noop_test() {
   // Should stay on AddPayment without any transition
   assert model.current_view == AddPayment
   assert model.back_view == []
+}
+
+pub fn footer_hints_normal_mode_includes_hjkl_nav_and_i_insert_test() {
+  let model = create_mock_model()
+  let html_str = view.view(model) |> element.to_string
+
+  assert string.contains(
+    html_str,
+    "<span class=\"text-primary\">[h/j/k/l]</span> Nav",
+  )
+  assert string.contains(
+    html_str,
+    "<span class=\"text-primary\">[i]</span> Insert",
+  )
+  assert string.contains(
+    html_str,
+    "<span class=\"text-primary\">[p/d]</span> Focus",
+  )
 }

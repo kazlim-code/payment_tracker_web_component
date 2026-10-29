@@ -1502,9 +1502,6 @@ fn header_view(model: Model) -> Element(state.Msg) {
 /// Renders the sticky footer containing keyboard shortcut hints and
 /// version information.
 ///
-/// NOTE: Keyboard navigation logic and associated tests are currently
-/// incomplete and not yet implemented.
-///
 fn footer_view(model: Model) -> Element(state.Msg) {
   let mode_badge = case model.vim_mode {
     keymap.NormalMode(_) ->
@@ -1554,7 +1551,8 @@ fn footer_hints(model: Model) -> List(Element(state.Msg)) {
         False -> hint("[gs]", "Summary")
       }
       [
-        hint("[j/k]", "Nav"),
+        hint("[h/j/k/l]", "Nav"),
+        hint("[i]", "Insert"),
         hint("[cp/cd]", "Clear"),
         hint("[p/d]", "Focus"),
         hint("[s/t]", "Toggle"),

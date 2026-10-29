@@ -780,7 +780,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 fn input_amount(value: String, model: Model) -> Model {
   let form_amount =
     value
-    |> float.parse
+    |> payment.parse_amount
     |> result.unwrap(model.form_amount)
     |> float.to_precision(2)
   case form_amount <. 0.0 {

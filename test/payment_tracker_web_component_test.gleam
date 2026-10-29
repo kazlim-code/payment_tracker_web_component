@@ -229,6 +229,15 @@ pub fn update_blurred_amount_test() {
   assert model.form_amount == 123.45
 }
 
+pub fn update_blurred_amount_non_decimal_test() {
+  let model = create_mock_model()
+  let #(model, _eff) = component.update(model, UserBlurredAmount("50"))
+  let html_str = view.view(model) |> element.to_string
+
+  assert model.form_amount == 50.0
+  assert string.contains(html_str, "value=\"50.00\"")
+}
+
 pub fn update_blurred_amount_invalid_string_test() {
   let model = create_mock_model()
   let model = state.Model(..model, form_amount: 50.0)
@@ -241,6 +250,15 @@ pub fn update_blurred_amount_invalid_string_test() {
 pub fn update_blurred_amount_negative_test() {
   let model = create_mock_model()
   let #(model, _eff) = component.update(model, UserBlurredAmount("-10.0"))
+
+  // Clamps to 0.0
+  assert model.form_amount == 0.0
+}
+
+pub fn update_blurred_amount_negative_non_decimal_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, form_amount: 25.0)
+  let #(model, _eff) = component.update(model, UserBlurredAmount("-10"))
 
   // Clamps to 0.0
   assert model.form_amount == 0.0
@@ -730,6 +748,46 @@ pub fn update_user_pressed_key_enter_in_price_input_confirms_and_returns_to_norm
 
   assert model.form_amount == 42.5
   assert model.vim_mode == NormalMode(Some(PriceInput))
+}
+
+pub fn update_user_pressed_key_enter_in_price_input_with_non_decimal_confirms_decimal_representation_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, vim_mode: InsertMode(PriceInput))
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("Enter", modifiers: []), in_input: True),
+    )
+
+  assert model.vim_mode == NormalMode(Some(PriceInput))
+
+  let #(model, _eff) = component.update(model, UserBlurredAmount("42"))
+  let html_str = view.view(model) |> element.to_string
+
+  assert model.form_amount == 42.0
+  assert model.vim_mode == NormalMode(Some(PriceInput))
+  assert string.contains(html_str, "value=\"42.00\"")
+}
+
+pub fn update_user_pressed_key_escape_in_price_input_with_non_decimal_confirms_decimal_representation_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, vim_mode: InsertMode(PriceInput))
+
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("Escape", modifiers: []), in_input: True),
+    )
+
+  assert model.vim_mode == NormalMode(Some(PriceInput))
+
+  let #(model, _eff) = component.update(model, UserBlurredAmount("42"))
+  let html_str = view.view(model) |> element.to_string
+
+  assert model.form_amount == 42.0
+  assert model.vim_mode == NormalMode(Some(PriceInput))
+  assert string.contains(html_str, "value=\"42.00\"")
 }
 
 pub fn update_user_pressed_key_submit_payment_chord_test() {

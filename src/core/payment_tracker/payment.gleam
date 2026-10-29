@@ -201,19 +201,22 @@ pub fn with_amount(payment: Payment, amount: Float) -> Payment {
   }
 }
 
+/// Parses a numeric string (either an integer or a decimal float) into a
+/// `Float`.
+///
+pub fn parse_amount(amount_string: String) -> Result(Float, Nil) {
+  use _ <- result.try_recover(float.parse(amount_string))
+  int.parse(amount_string) |> result.map(int.to_float)
+}
+
 /// Attempts to convert a price amount from a string to a float to add the
 /// amount to a payment as a builder pattern.
 ///
 /// If the conversion fails, the original payment is returned.
 ///
 pub fn with_amount_string(payment: Payment, amount_string: String) -> Payment {
-  let amount_float = case int.parse(amount_string) {
-    Ok(amount_int) -> Ok(int.to_float(amount_int))
-    Error(_) -> float.parse(amount_string)
-  }
-
   // If amount is not valid, return original payment
-  case amount_float {
+  case parse_amount(amount_string) {
     Ok(amount) -> with_amount(payment, amount)
     Error(_) -> payment
   }

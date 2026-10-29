@@ -63,6 +63,18 @@ pub fn sort_by_date_with_none_test() {
     == ["P1", "P2"]
 }
 
+pub fn parse_amount_test() {
+  assert payment.parse_amount("123.45") == Ok(123.45)
+}
+
+pub fn parse_amount_non_decimal_test() {
+  assert payment.parse_amount("100") == Ok(100.0)
+}
+
+pub fn parse_amount_invalid_test() {
+  assert payment.parse_amount("abc") == Error(Nil)
+}
+
 pub fn with_amount_string_test() {
   let p = payment.new("Test")
 

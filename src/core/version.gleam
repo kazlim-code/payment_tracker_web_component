@@ -5,7 +5,7 @@
 import gleamsver.{type SemVer}
 
 /// The current version of the application as a string.
-pub const string = "0.3.4"
+pub const string = "0.3.5"
 
 /// Parses the version string and returns a `SemVer` type.
 /// Panics if the version string is invalid (which should not happen

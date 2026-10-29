@@ -9,7 +9,7 @@ This document tracks the current status of features, planned improvements, and t
 - [x] Pressing "Enter" in PriceInput field seems to reset the value. I would like it to confirm the value and leave Insert mode (return to Normal mode)
 - [x] Update Footer hints to include all "hjkl" keys for navigation and "i" key for entering insert mode on inputs
 - [x] Update Footer hints to include "Enter" key for confirming/returning to normal mode on input elements when in Insert mode
-- [ ] Allow non-decimal values to be added to the PriceInput field on enter/escape/blur. This should change the value to be its decimal representation.
+- [x] Allow non-decimal values to be added to the PriceInput field on enter/escape/blur. This should change the value to be its decimal representation.
 
 ## 🚀 Features & Functionality
 

@@ -391,3 +391,23 @@ pub fn insert_mode_escape_returns_to_normal_test() {
   assert keymap.resolve(km, esc, InsertMode(PriceInput), None)
     == #(Some(ExitInsertMode), None)
 }
+
+pub fn insert_mode_enter_on_single_line_inputs_returns_to_normal_test() {
+  let km = keymap.default_keymap()
+  let enter = KeyEvent(key: keymap.key_enter, modifiers: [])
+
+  assert keymap.resolve(km, enter, InsertMode(PriceInput), None)
+    == #(Some(ExitInsertMode), None)
+  assert keymap.resolve(km, enter, InsertMode(DateInput), None)
+    == #(Some(ExitInsertMode), None)
+  assert keymap.resolve(km, enter, InsertMode(TableSearchInput), None)
+    == #(Some(ExitInsertMode), None)
+}
+
+pub fn insert_mode_enter_on_description_textarea_is_ignored_test() {
+  let km = keymap.default_keymap()
+  let enter = KeyEvent(key: keymap.key_enter, modifiers: [])
+
+  assert keymap.resolve(km, enter, InsertMode(DescriptionTextarea), None)
+    == #(None, None)
+}

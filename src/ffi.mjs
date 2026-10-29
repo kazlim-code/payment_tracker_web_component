@@ -474,13 +474,18 @@ export function subscribe_keyboard(callback) {
       }
     }
 
-    // In input, prevent default on Escape, or Ctrl+Enter / Shift+Enter
+    // In input, prevent default on Escape, Ctrl+Enter / Shift+Enter, or Enter on single-line <input>
     if (isInput) {
       if (e.key === "Escape") {
         e.preventDefault();
       }
-      if (e.key === "Enter" && (e.ctrlKey || e.shiftKey)) {
-        e.preventDefault();
+      if (e.key === "Enter") {
+        if (e.isComposing || e.keyCode === 229) {
+          return;
+        }
+        if (e.ctrlKey || e.shiftKey || target.tagName === "INPUT") {
+          e.preventDefault();
+        }
       }
     }
 

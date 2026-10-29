@@ -122,6 +122,17 @@ pub fn to_normal_mode(mode: VimMode) -> VimMode {
   NormalMode(active_target(mode))
 }
 
+/// Returns `True` when the given `FocusTarget` is a single-line `<input>`
+/// element where pressing unmodified `Enter` in Insert mode confirms the
+/// value and returns to Normal mode.
+///
+pub fn is_single_line_input(target: FocusTarget) -> Bool {
+  case target {
+    PriceInput | DateInput | TableSearchInput -> True
+    _ -> False
+  }
+}
+
 /// Maps a strongly-typed `FocusTarget` to its corresponding CSS selector within
 /// the component's Shadow DOM.
 ///
@@ -349,9 +360,14 @@ pub fn resolve(
     Some(action) -> #(Some(action), None)
     None -> {
       case mode {
-        InsertMode(_) -> {
-          // In insert mode, Escape always exits back to Normal mode
-          case event.key == key_escape {
+        InsertMode(target) -> {
+          // In insert mode, Escape always exits back to Normal mode.
+          // Unmodified Enter also confirms and exits on single-line inputs.
+          let is_enter_confirm =
+            event.key == key_enter
+            && list.is_empty(event.modifiers)
+            && is_single_line_input(target)
+          case event.key == key_escape || is_enter_confirm {
             True -> #(Some(ExitInsertMode), None)
             False -> #(None, None)
           }

@@ -708,6 +708,27 @@ pub fn update_user_pressed_key_exit_insert_mode_retains_target_test() {
   assert model.vim_mode == NormalMode(Some(PriceInput))
 }
 
+pub fn update_user_pressed_key_enter_in_price_input_confirms_and_returns_to_normal_mode_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, vim_mode: InsertMode(PriceInput))
+
+  // Pressing Enter while in PriceInput exits InsertMode to NormalMode(Some(PriceInput))
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("Enter", modifiers: []), in_input: True),
+    )
+
+  assert model.vim_mode == NormalMode(Some(PriceInput))
+
+  // The triggered blur_effect dispatches UserBlurredAmount with the typed value,
+  // confirming form_amount while staying in NormalMode(Some(PriceInput))
+  let #(model, _eff) = component.update(model, UserBlurredAmount("42.5"))
+
+  assert model.form_amount == 42.5
+  assert model.vim_mode == NormalMode(Some(PriceInput))
+}
+
 pub fn update_user_pressed_key_submit_payment_chord_test() {
   let model = create_mock_model()
   let model =

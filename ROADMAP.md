@@ -6,6 +6,9 @@ This document tracks the current status of features, planned improvements, and t
 - [x] Dialog height css issue in Safari browser (height appears close to 0 whereas Chrome browser shows correct sizing around the minimum heights of the internal elements)
 - [x] Hovering each row of the monthly detail table lightens all the td cells, not the tr (visually has breaks between each cell)
 - [x] Ensure correct order is kept for months appearing in Summary View
+- [ ] Pressing "Enter" in PriceInput field seems to reset the value. I would like it to confirm the value and leave Insert mode (return to Normal mode)
+- [ ] Update Footer hints to include all "hjkl" keys for navigation and "i" key for entering insert mode on inputs
+- [ ] Update Footer hints to include "Enter" key for confirming/returning to normal mode on input elements when in Insert mode
 
 ## 🚀 Features & Functionality
 

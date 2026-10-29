@@ -25,7 +25,7 @@ This document tracks the current status of features, planned improvements, and t
 ### ⌨️ Keyboard Navigation (Vim-like)
 - [x] Implement Vim-like keyboard shortcuts (`cp`, `cd`, `p`, `d`, `s`, `t`, `[]`, `{}`, `j`, `k`, `/`, `gp`, `gs`, `gm`, `esc`, `<CR>`, `<C-Enter>`, `<S-Enter>`).
 - [x] Add visual mode indicators (`-- NORMAL --`, `-- INSERT --`, `-- PENDING --`) in bottom status bar.
-- [ ] Add visual focus states for keyboard navigation.
+- [x] Add visual focus states for keyboard navigation.
 - [ ] **GUI Keymap Editor:** Settings modal/view to customize and persist user keybindings.
 - [ ] **Dynamic Bottom Bar:** Context-aware key hints depending on focused input, with global action overlay.
 - [ ] **Keymap Cheatsheet Modal:** Triggered by `?` showing all available motions.

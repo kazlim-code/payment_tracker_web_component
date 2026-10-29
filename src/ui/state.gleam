@@ -194,7 +194,7 @@ pub fn init(storage storage: StorageConfig, query uri_query: Bool) -> Model {
     detail_sort_direction: sort.Desc,
     keymap: keymap.default_keymap(),
     pending_key_prefix: None,
-    vim_mode: NormalMode,
+    vim_mode: NormalMode(None),
   )
 }
 

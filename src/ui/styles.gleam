@@ -934,6 +934,12 @@ pub fn base() -> Element(msg) {
       color: var(--tertiary);
     }
 
+    .vim-focused {
+      outline: 2px solid var(--primary) !important;
+      outline-offset: 2px;
+      z-index: 2;
+    }
+
     /* Entry View Header */
     .view-header {
       align-items: center;

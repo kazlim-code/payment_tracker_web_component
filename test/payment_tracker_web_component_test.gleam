@@ -1,7 +1,8 @@
 import component
 import core/payment_tracker/internal/sort
 import core/payment_tracker/keymap.{
-  Control, DescriptionTextarea, InsertMode, KeyEvent, NormalMode, PriceInput,
+  Control, DateInput, DescriptionTextarea, InsertMode, KeyEvent, NormalMode,
+  PriceInput, SharedToggle, SubmitButton, TodayToggle,
 }
 import core/payment_tracker/monthly_payment
 import core/payment_tracker/payment
@@ -525,12 +526,12 @@ pub fn update_user_focused_target_sets_insert_mode_test() {
   assert model.vim_mode == InsertMode(DescriptionTextarea)
 }
 
-pub fn update_user_blurred_target_sets_normal_mode_test() {
+pub fn update_user_blurred_target_sets_normal_mode_retaining_target_test() {
   let model = create_mock_model()
   let model = state.Model(..model, vim_mode: InsertMode(PriceInput))
   let #(model, _eff) = component.update(model, UserBlurredTarget)
 
-  assert model.vim_mode == NormalMode
+  assert model.vim_mode == NormalMode(Some(PriceInput))
 }
 
 pub fn update_user_pressed_key_toggle_shared_test() {
@@ -694,7 +695,7 @@ pub fn update_user_pressed_key_clear_and_focus_price_test() {
   assert model.vim_mode == InsertMode(PriceInput)
 }
 
-pub fn update_user_pressed_key_exit_insert_mode_test() {
+pub fn update_user_pressed_key_exit_insert_mode_retains_target_test() {
   let model = create_mock_model()
   let model = state.Model(..model, vim_mode: InsertMode(PriceInput))
 
@@ -704,7 +705,7 @@ pub fn update_user_pressed_key_exit_insert_mode_test() {
       UserPressedKey(KeyEvent("Escape", modifiers: []), in_input: True),
     )
 
-  assert model.vim_mode == NormalMode
+  assert model.vim_mode == NormalMode(Some(PriceInput))
 }
 
 pub fn update_user_pressed_key_submit_payment_chord_test() {
@@ -728,61 +729,155 @@ pub fn update_user_pressed_key_submit_payment_chord_test() {
   assert list.length(user.get_payments(model.user)) == 1
 }
 
-pub fn update_user_pressed_key_nav_left_decrements_amount_test() {
+pub fn update_user_pressed_key_nav_down_traverses_left_column_in_normal_mode_test() {
   let model = create_mock_model()
-  let model = state.Model(..model, form_amount: 5.0)
+  assert model.vim_mode == NormalMode(None)
 
+  // 1st j -> NormalMode(Some(PriceInput)) (does NOT enter InsertMode!)
   let #(model, _eff) =
     component.update(
       model,
-      UserPressedKey(KeyEvent("h", modifiers: []), in_input: False),
+      UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
     )
+  assert model.vim_mode == NormalMode(Some(PriceInput))
 
-  assert model.form_amount == 4.99
+  // 2nd j -> NormalMode(Some(SharedToggle))
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == NormalMode(Some(SharedToggle))
+
+  // 3rd j -> NormalMode(Some(TodayToggle))
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == NormalMode(Some(TodayToggle))
+
+  // 4th j -> NormalMode(Some(DateInput))
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == NormalMode(Some(DateInput))
+
+  // 5th j -> Clamped at NormalMode(Some(DateInput))
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == NormalMode(Some(DateInput))
 }
 
-pub fn update_user_pressed_key_nav_right_increments_amount_test() {
+pub fn update_user_pressed_key_hjkl_2d_spatial_navigation_test() {
   let model = create_mock_model()
-  let model = state.Model(..model, form_amount: 5.0)
 
+  // Initial j -> PriceInput
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == NormalMode(Some(PriceInput))
+
+  // l from PriceInput -> fast hop to DescriptionTextarea
   let #(model, _eff) =
     component.update(
       model,
       UserPressedKey(KeyEvent("l", modifiers: []), in_input: False),
     )
+  assert model.vim_mode == NormalMode(Some(DescriptionTextarea))
 
-  assert model.form_amount == 5.01
-}
-
-pub fn update_user_pressed_key_nav_down_cycles_focus_test() {
-  let model = create_mock_model()
-  // Normal mode -> j focuses PriceInput
+  // j from DescriptionTextarea -> SubmitButton
   let #(model, _eff) =
     component.update(
       model,
       UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
     )
-  assert model.vim_mode == InsertMode(PriceInput)
+  assert model.vim_mode == NormalMode(Some(SubmitButton))
 
-  // From PriceInput -> j focuses DescriptionTextarea
+  // h from SubmitButton -> DateInput
   let #(model, _eff) =
     component.update(
       model,
-      UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
+      UserPressedKey(KeyEvent("h", modifiers: []), in_input: False),
     )
-  assert model.vim_mode == InsertMode(DescriptionTextarea)
-}
+  assert model.vim_mode == NormalMode(Some(DateInput))
 
-pub fn update_user_pressed_key_nav_up_focuses_price_test() {
-  let model = create_mock_model()
-  let model = state.Model(..model, vim_mode: InsertMode(DescriptionTextarea))
-
+  // k from DateInput -> TodayToggle
   let #(model, _eff) =
     component.update(
       model,
       UserPressedKey(KeyEvent("k", modifiers: []), in_input: False),
     )
+  assert model.vim_mode == NormalMode(Some(TodayToggle))
+
+  // k from TodayToggle -> SharedToggle
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("k", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == NormalMode(Some(SharedToggle))
+
+  // k from SharedToggle -> PriceInput
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("k", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == NormalMode(Some(PriceInput))
+}
+
+pub fn update_user_pressed_key_i_activates_focused_target_and_escape_continues_navigation_test() {
+  let model = create_mock_model()
+
+  // j -> highlights PriceInput in NormalMode
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == NormalMode(Some(PriceInput))
+
+  // i -> enters InsertMode(PriceInput)
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("i", modifiers: []), in_input: False),
+    )
   assert model.vim_mode == InsertMode(PriceInput)
+
+  // Escape -> exits to NormalMode(Some(PriceInput))
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("Escape", modifiers: []), in_input: True),
+    )
+  assert model.vim_mode == NormalMode(Some(PriceInput))
+
+  // Subsequent j -> moves to SharedToggle instead of re-selecting PriceInput!
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("j", modifiers: []), in_input: False),
+    )
+  assert model.vim_mode == NormalMode(Some(SharedToggle))
+
+  // i on SharedToggle -> toggles form_shared_toggle while staying in NormalMode(Some(SharedToggle))
+  assert model.form_shared_toggle == False
+  let #(model, _eff) =
+    component.update(
+      model,
+      UserPressedKey(KeyEvent("i", modifiers: []), in_input: False),
+    )
+  assert model.form_shared_toggle == True
+  assert model.vim_mode == NormalMode(Some(SharedToggle))
 }
 
 pub fn update_user_pressed_key_gp_when_on_add_payment_is_noop_test() {

@@ -288,7 +288,13 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       }
     }
     // --- Add Payment View ---
-    UserBlurredAmount(amount) -> #(input_amount(amount, model), effect.none())
+    UserBlurredAmount(amount) -> {
+      let model =
+        amount
+        |> input_amount(model)
+        |> exit_to_normal_mode
+      #(model, effect.none())
+    }
     UserChangedPaymentDate(date_string) -> #(
       state.Model(..model, form_date: date_string),
       effect.none(),
@@ -306,11 +312,11 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       effect.none(),
     )
     UserToggledShared -> #(
-      state.Model(..model, form_shared_toggle: !model.form_shared_toggle),
+      toggle_form_switch(model, keymap.SharedToggle),
       effect.none(),
     )
     UserToggledToday -> #(
-      state.Model(..model, form_today_toggle: !model.form_today_toggle),
+      toggle_form_switch(model, keymap.TodayToggle),
       effect.none(),
     )
     UserSubmittedPayment(values) -> {
@@ -555,16 +561,16 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       )
     }
     UserBlurredTarget -> {
-      #(state.Model(..model, vim_mode: keymap.NormalMode), effect.none())
+      #(exit_to_normal_mode(model), effect.none())
     }
     UserPressedKey(key_event, in_input) -> {
       let current_mode = case in_input {
         True ->
-          case model.vim_mode {
-            keymap.InsertMode(t) -> keymap.InsertMode(t)
-            keymap.NormalMode -> keymap.InsertMode(keymap.DescriptionTextarea)
+          case keymap.active_target(model.vim_mode) {
+            Some(t) -> keymap.InsertMode(t)
+            None -> keymap.InsertMode(keymap.DescriptionTextarea)
           }
-        False -> keymap.NormalMode
+        False -> keymap.to_normal_mode(model.vim_mode)
       }
       let #(resolved_action, new_prefix) =
         keymap.resolve(
@@ -575,6 +581,39 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         )
       let model = state.Model(..model, pending_key_prefix: new_prefix)
       case resolved_action {
+        Some(keymap.ActivateTarget) -> {
+          case keymap.active_target(model.vim_mode) {
+            Some(keymap.SharedToggle as target)
+            | Some(keymap.TodayToggle as target) -> {
+              let model = toggle_form_switch(model, target)
+              #(
+                state.Model(..model, vim_mode: keymap.NormalMode(Some(target))),
+                effect.none(),
+              )
+            }
+            Some(keymap.SubmitButton) -> submit_payment_from_model(model)
+            Some(target) -> {
+              let selector = keymap.focus_target_to_selector(target)
+              let select_all = target == keymap.PriceInput
+              let model =
+                state.Model(..model, vim_mode: keymap.InsertMode(target))
+              #(model, focus_effect(selector, select_all, False))
+            }
+            None -> {
+              let target = keymap.DescriptionTextarea
+              let selector = keymap.focus_target_to_selector(target)
+              let model =
+                state.Model(..model, vim_mode: keymap.InsertMode(target))
+              #(model, focus_effect(selector, False, False))
+            }
+          }
+        }
+        Some(keymap.ClearFocus) -> {
+          #(
+            state.Model(..model, vim_mode: keymap.NormalMode(None)),
+            effect.none(),
+          )
+        }
         Some(keymap.FocusTarget(target)) -> {
           let selector = keymap.focus_target_to_selector(target)
           let select_all = target == keymap.PriceInput
@@ -593,16 +632,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           #(model, focus_effect(selector, select_all, True))
         }
         Some(keymap.ToggleShared) -> {
-          #(
-            state.Model(..model, form_shared_toggle: !model.form_shared_toggle),
-            effect.none(),
-          )
+          #(toggle_form_switch(model, keymap.SharedToggle), effect.none())
         }
         Some(keymap.ToggleToday) -> {
-          #(
-            state.Model(..model, form_today_toggle: !model.form_today_toggle),
-            effect.none(),
-          )
+          #(toggle_form_switch(model, keymap.TodayToggle), effect.none())
         }
         Some(keymap.IncrementDay) -> {
           let model = adjust_form_date(model, days: 1)
@@ -622,13 +655,19 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         }
         Some(keymap.NavLeft) -> {
           case model.current_view {
-            AddPayment -> #(decrement_amount(model), effect.none())
+            AddPayment -> #(
+              navigate_add_payment_target(model, keymap.NavLeft),
+              effect.none(),
+            )
             _ -> update(model, UserClickedBack)
           }
         }
         Some(keymap.NavRight) -> {
           case model.current_view {
-            AddPayment -> #(increment_amount(model), effect.none())
+            AddPayment -> #(
+              navigate_add_payment_target(model, keymap.NavRight),
+              effect.none(),
+            )
             MonthlySummary -> {
               case user.get_monthly_payments(model.user) |> list.first {
                 Ok(first_mp) -> {
@@ -643,30 +682,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         }
         Some(keymap.NavDown) | Some(keymap.NextRow) -> {
           case model.current_view {
-            AddPayment -> {
-              case model.vim_mode {
-                keymap.InsertMode(keymap.PriceInput) -> {
-                  let selector =
-                    keymap.focus_target_to_selector(keymap.DescriptionTextarea)
-                  let model =
-                    state.Model(
-                      ..model,
-                      vim_mode: keymap.InsertMode(keymap.DescriptionTextarea),
-                    )
-                  #(model, focus_effect(selector, False, False))
-                }
-                _ -> {
-                  let selector =
-                    keymap.focus_target_to_selector(keymap.PriceInput)
-                  let model =
-                    state.Model(
-                      ..model,
-                      vim_mode: keymap.InsertMode(keymap.PriceInput),
-                    )
-                  #(model, focus_effect(selector, True, False))
-                }
-              }
-            }
+            AddPayment -> #(
+              navigate_add_payment_target(model, keymap.NavDown),
+              effect.none(),
+            )
             MonthlySummary -> {
               case user.get_monthly_payments(model.user) |> list.first {
                 Ok(first_mp) -> {
@@ -681,15 +700,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         }
         Some(keymap.NavUp) | Some(keymap.PreviousRow) -> {
           case model.current_view {
-            AddPayment -> {
-              let selector = keymap.focus_target_to_selector(keymap.PriceInput)
-              let model =
-                state.Model(
-                  ..model,
-                  vim_mode: keymap.InsertMode(keymap.PriceInput),
-                )
-              #(model, focus_effect(selector, True, False))
-            }
+            AddPayment -> #(
+              navigate_add_payment_target(model, keymap.NavUp),
+              effect.none(),
+            )
             _ -> update(model, UserClickedBack)
           }
         }
@@ -704,7 +718,14 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           #(model, focus_effect(selector, False, False))
         }
         Some(keymap.SubmitPayment) -> {
-          submit_payment_from_model(model)
+          case model.vim_mode {
+            keymap.NormalMode(Some(keymap.SharedToggle as target))
+            | keymap.NormalMode(Some(keymap.TodayToggle as target)) -> #(
+              toggle_form_switch(model, target),
+              effect.none(),
+            )
+            _ -> submit_payment_from_model(model)
+          }
         }
         Some(keymap.SubmitAndNavigateToMonth) -> {
           submit_and_navigate_to_month(model)
@@ -740,11 +761,9 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         }
         Some(keymap.ExitInsertMode) -> {
           let model =
-            state.Model(
-              ..model,
-              vim_mode: keymap.NormalMode,
-              pending_key_prefix: None,
-            )
+            model
+            |> exit_to_normal_mode
+            |> fn(m) { state.Model(..m, pending_key_prefix: None) }
           #(model, blur_effect())
         }
         None -> #(model, effect.none())
@@ -755,6 +774,9 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 // --- Model updates ---
 
+/// Parses a string amount and updates `form_amount` on the model, clamping
+/// negative values to `0.0` and rounding to 2 decimal places.
+///
 fn input_amount(value: String, model: Model) -> Model {
   let form_amount =
     value
@@ -767,6 +789,8 @@ fn input_amount(value: String, model: Model) -> Model {
   }
 }
 
+/// Increments `form_amount` by `step_amount` (`0.01`).
+///
 fn increment_amount(model: Model) -> Model {
   state.Model(
     ..model,
@@ -774,12 +798,48 @@ fn increment_amount(model: Model) -> Model {
   )
 }
 
+/// Decrements `form_amount` by `step_amount` (`0.01`), clamping at `0.0`.
+///
 fn decrement_amount(model: Model) -> Model {
   let form_amount = model.form_amount -. step_amount |> float.to_precision(2)
   case form_amount <. 0.0 {
     True -> state.Model(..model, form_amount: 0.0)
     False -> state.Model(..model, form_amount:)
   }
+}
+
+/// Toggles a boolean form switch (`SharedToggle` or `TodayToggle`) on the
+/// model.
+///
+fn toggle_form_switch(model: Model, target: keymap.FocusTarget) -> Model {
+  case target {
+    keymap.SharedToggle ->
+      state.Model(..model, form_shared_toggle: !model.form_shared_toggle)
+    keymap.TodayToggle ->
+      state.Model(..model, form_today_toggle: !model.form_today_toggle)
+    _ -> model
+  }
+}
+
+/// Transitions the model's `vim_mode` into `NormalMode` while retaining the
+/// currently focused `FocusTarget`.
+///
+fn exit_to_normal_mode(model: Model) -> Model {
+  state.Model(..model, vim_mode: keymap.to_normal_mode(model.vim_mode))
+}
+
+/// Moves the Normal mode virtual cursor across the Add Payment 2D `FocusGrid`
+/// in the direction specified by `action`.
+///
+fn navigate_add_payment_target(model: Model, action: keymap.Action) -> Model {
+  let current_target = keymap.active_target(model.vim_mode)
+  let next_target =
+    keymap.navigate_focus_target(
+      keymap.add_payment_grid(),
+      current_target,
+      action,
+    )
+  state.Model(..model, vim_mode: keymap.NormalMode(next_target))
 }
 
 // --- Effects ---

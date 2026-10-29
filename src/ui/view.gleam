@@ -96,42 +96,63 @@ fn add_payment_form(with model: Model) -> Element(state.Msg) {
       #("btn-primary", True),
       #("uppercase", True),
       #("success", model.form_success_count > 0),
+      #("vim-focused", is_vim_focused(model, keymap.SubmitButton)),
     ])
 
+  let textarea_attributes = case
+    is_vim_focused(model, keymap.DescriptionTextarea)
+  {
+    True -> [
+      attribute.class("vim-focused"),
+      attribute.name("payment-name"),
+      attribute.placeholder("Add a description..."),
+      attribute.value(model.form_name),
+      event.on_input(UserInputPaymentName),
+      event.on_focus(UserFocusedTarget(keymap.DescriptionTextarea)),
+      event.on_blur(UserBlurredTarget),
+    ]
+    False -> [
+      attribute.name("payment-name"),
+      attribute.placeholder("Add a description..."),
+      attribute.value(model.form_name),
+      event.on_input(UserInputPaymentName),
+      event.on_focus(UserFocusedTarget(keymap.DescriptionTextarea)),
+      event.on_blur(UserBlurredTarget),
+    ]
+  }
+
   html.form([event.on_submit(UserSubmittedPayment)], [
-    add_payment_price(with: model.form_amount),
+    add_payment_price(
+      with: model.form_amount,
+      focused: is_vim_focused(model, keymap.PriceInput),
+    ),
     html.div([attribute.class("form-layout")], [
       html.div([attribute.class("flex flex-col gap-md")], [
         toggle_container(
           name: "shared-toggle",
           label: "Shared",
           toggle: model.form_shared_toggle,
+          focused: is_vim_focused(model, keymap.SharedToggle),
           emits: UserToggledShared,
         ),
         toggle_container(
           name: "today-toggle",
           label: "Today",
           toggle: model.form_today_toggle,
+          focused: is_vim_focused(model, keymap.TodayToggle),
           emits: UserToggledToday,
         ),
         calendar_picker_container(
-          attributes: [],
+          attributes: case is_vim_focused(model, keymap.DateInput) {
+            True -> [attribute.class("vim-focused")]
+            False -> []
+          },
           today: model.form_today_toggle,
           value: model.form_date,
         ),
       ]),
       html.div([attribute.class("payment-content")], [
-        html.textarea(
-          [
-            attribute.name("payment-name"),
-            attribute.placeholder("Add a description..."),
-            attribute.value(model.form_name),
-            event.on_input(UserInputPaymentName),
-            event.on_focus(UserFocusedTarget(keymap.DescriptionTextarea)),
-            event.on_blur(UserBlurredTarget),
-          ],
-          model.form_name,
-        ),
+        html.textarea(textarea_attributes, model.form_name),
         html.button(
           [
             submit_success,
@@ -144,50 +165,65 @@ fn add_payment_form(with model: Model) -> Element(state.Msg) {
   ])
 }
 
+fn is_vim_focused(model: Model, target: keymap.FocusTarget) -> Bool {
+  model.vim_mode == keymap.NormalMode(Some(target))
+}
+
 /// Renders a large currency input field with custom increment/decrement
 /// controls.
 ///
-fn add_payment_price(with price: Float) -> Element(state.Msg) {
-  html.div([attribute.class("payment-price")], [
-    html.label([attribute.for("price"), attribute.class("sr-only")], [
-      html.text("Payment amount"),
-    ]),
-    html.span([attribute.class("symbol")], [html.text("$")]),
-    html.input([
-      attribute.value(price |> float_to_padded_string),
-      attribute.class(""),
-      attribute.min("0"),
-      attribute.id("price"),
-      attribute.name("payment-price"),
-      attribute.placeholder("0.00"),
-      attribute.step("0.01"),
-      event.on_focus(UserFocusedTarget(keymap.PriceInput)),
-      on_blur_with_value(UserBlurredAmount),
-      type_("number"),
-    ]),
-    html.div([attribute.class("inc-dec")], [
-      html.button(
-        [
-          attribute.class("inc-dec top"),
-          event.on_click(UserIncrementedAmount),
-          type_("button"),
-        ],
-        [
-          ui_svg.chevron_up(),
-        ],
-      ),
-      html.button(
-        [
-          attribute.class("inc-dec"),
-          event.on_click(UserDecrementedAmount),
-          type_("button"),
-        ],
-        [
-          ui_svg.chevron_up(),
-        ],
-      ),
-    ]),
-  ])
+fn add_payment_price(
+  with price: Float,
+  focused is_focused: Bool,
+) -> Element(state.Msg) {
+  html.div(
+    [
+      attribute.classes([
+        #("payment-price", True),
+        #("vim-focused", is_focused),
+      ]),
+    ],
+    [
+      html.label([attribute.for("price"), attribute.class("sr-only")], [
+        html.text("Payment amount"),
+      ]),
+      html.span([attribute.class("symbol")], [html.text("$")]),
+      html.input([
+        attribute.value(price |> float_to_padded_string),
+        attribute.class(""),
+        attribute.min("0"),
+        attribute.id("price"),
+        attribute.name("payment-price"),
+        attribute.placeholder("0.00"),
+        attribute.step("0.01"),
+        event.on_focus(UserFocusedTarget(keymap.PriceInput)),
+        on_blur_with_value(UserBlurredAmount),
+        type_("number"),
+      ]),
+      html.div([attribute.class("inc-dec")], [
+        html.button(
+          [
+            attribute.class("inc-dec top"),
+            event.on_click(UserIncrementedAmount),
+            type_("button"),
+          ],
+          [
+            ui_svg.chevron_up(),
+          ],
+        ),
+        html.button(
+          [
+            attribute.class("inc-dec"),
+            event.on_click(UserDecrementedAmount),
+            type_("button"),
+          ],
+          [
+            ui_svg.chevron_up(),
+          ],
+        ),
+      ]),
+    ],
+  )
 }
 
 // --- Toggles ---
@@ -198,12 +234,21 @@ fn toggle_container(
   name name: String,
   label label: String,
   toggle value: Bool,
+  focused is_focused: Bool,
   emits msg: state.Msg,
 ) -> Element(state.Msg) {
-  html.div([attribute.class("toggle-container")], [
-    html.label([attribute.class("uppercase")], [html.text(label)]),
-    toggle(name: name, value: value, emits: msg),
-  ])
+  html.div(
+    [
+      attribute.classes([
+        #("toggle-container", True),
+        #("vim-focused", is_focused),
+      ]),
+    ],
+    [
+      html.label([attribute.class("uppercase")], [html.text(label)]),
+      toggle(name: name, value: value, emits: msg),
+    ],
+  )
 }
 
 /// A primitive binary switch component that emits messages when toggled.
@@ -1462,7 +1507,7 @@ fn header_view(model: Model) -> Element(state.Msg) {
 ///
 fn footer_view(model: Model) -> Element(state.Msg) {
   let mode_badge = case model.vim_mode {
-    keymap.NormalMode ->
+    keymap.NormalMode(_) ->
       case model.pending_key_prefix {
         Some(prefix) ->
           html.span([attribute.class("vim-mode-badge pending")], [

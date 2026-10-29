@@ -963,3 +963,41 @@ pub fn footer_hints_normal_mode_includes_hjkl_nav_and_i_insert_test() {
     "<span class=\"text-primary\">[p/d]</span> Focus",
   )
 }
+
+pub fn footer_hints_insert_mode_on_input_shows_esc_enter_normal_and_ctrl_enter_submit_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, vim_mode: InsertMode(PriceInput))
+  let html_str = view.view(model) |> element.to_string
+
+  assert string.contains(
+    html_str,
+    "<span class=\"text-primary\">[esc/enter]</span> Normal",
+  )
+  assert string.contains(
+    html_str,
+    "<span class=\"text-primary\">[ctrl+enter]</span> Submit",
+  )
+  assert !string.contains(
+    html_str,
+    "<span class=\"text-primary\">[h/j/k/l]</span> Nav",
+  )
+}
+
+pub fn footer_hints_insert_mode_on_textarea_shows_esc_normal_test() {
+  let model = create_mock_model()
+  let model = state.Model(..model, vim_mode: InsertMode(DescriptionTextarea))
+  let html_str = view.view(model) |> element.to_string
+
+  assert string.contains(
+    html_str,
+    "<span class=\"text-primary\">[esc]</span> Normal",
+  )
+  assert string.contains(
+    html_str,
+    "<span class=\"text-primary\">[ctrl+enter]</span> Submit",
+  )
+  assert !string.contains(
+    html_str,
+    "<span class=\"text-primary\">[esc/enter]</span> Normal",
+  )
+}

@@ -1543,43 +1543,56 @@ fn footer_view(model: Model) -> Element(state.Msg) {
 }
 
 fn footer_hints(model: Model) -> List(Element(state.Msg)) {
-  let has_months = !list.is_empty(user.get_monthly_payments(model.user))
-  case model.current_view {
-    AddPayment -> {
-      let view_hint = case has_months {
-        True -> hint("[gs/gm]", "View")
-        False -> hint("[gs]", "Summary")
+  case model.vim_mode {
+    keymap.InsertMode(target) -> {
+      let normal_hint = case keymap.is_single_line_input(target) {
+        True -> hint("[esc/enter]", "Normal")
+        False -> hint("[esc]", "Normal")
       }
-      [
-        hint("[h/j/k/l]", "Nav"),
-        hint("[i]", "Insert"),
-        hint("[cp/cd]", "Clear"),
-        hint("[p/d]", "Focus"),
-        hint("[s/t]", "Toggle"),
-        hint("[[]/[]]", "Day"),
-        hint("[{/}]", "Month"),
-        view_hint,
-        hint("[esc]", "Normal"),
-      ]
-    }
-    MonthlySummary -> {
-      let view_hint = case has_months {
-        True -> hint("[gp/gm]", "View")
-        False -> hint("[gp]", "Payment")
+      case model.current_view {
+        AddPayment -> [normal_hint, hint("[ctrl+enter]", "Submit")]
+        _ -> [normal_hint]
       }
-      [
-        hint("[j/k]", "Nav"),
-        hint("[l/enter]", "Open"),
-        hint("[h/esc]", "Back"),
-        view_hint,
-      ]
     }
-    MonthlyDetail(_) -> [
-      hint("[j/k]", "Nav"),
-      hint("[/]", "Search"),
-      hint("[h/esc]", "Back"),
-      hint("[gp/gs]", "View"),
-    ]
+    keymap.NormalMode(_) -> {
+      let has_months = !list.is_empty(user.get_monthly_payments(model.user))
+      case model.current_view {
+        AddPayment -> {
+          let view_hint = case has_months {
+            True -> hint("[gs/gm]", "View")
+            False -> hint("[gs]", "Summary")
+          }
+          [
+            hint("[h/j/k/l]", "Nav"),
+            hint("[i]", "Insert"),
+            hint("[cp/cd]", "Clear"),
+            hint("[p/d]", "Focus"),
+            hint("[s/t]", "Toggle"),
+            hint("[[]/[]]", "Day"),
+            hint("[{/}]", "Month"),
+            view_hint,
+          ]
+        }
+        MonthlySummary -> {
+          let view_hint = case has_months {
+            True -> hint("[gp/gm]", "View")
+            False -> hint("[gp]", "Payment")
+          }
+          [
+            hint("[j/k]", "Nav"),
+            hint("[l/enter]", "Open"),
+            hint("[h/esc]", "Back"),
+            view_hint,
+          ]
+        }
+        MonthlyDetail(_) -> [
+          hint("[j/k]", "Nav"),
+          hint("[/]", "Search"),
+          hint("[h/esc]", "Back"),
+          hint("[gp/gs]", "View"),
+        ]
+      }
+    }
   }
 }
 

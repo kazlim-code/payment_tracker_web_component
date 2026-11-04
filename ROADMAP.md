@@ -10,6 +10,7 @@ This document tracks the current status of features, planned improvements, and t
 - [x] Update Footer hints to include all "hjkl" keys for navigation and "i" key for entering insert mode on inputs
 - [x] Update Footer hints to include "Enter" key for confirming/returning to normal mode on input elements when in Insert mode
 - [x] Allow non-decimal values to be added to the PriceInput field on enter/escape/blur. This should change the value to be its decimal representation.
+- [ ] Allow spacebar/enter to activate the date picker when selected as the focus target in normal mode.
 
 ## 🚀 Features & Functionality
 
@@ -30,6 +31,8 @@ This document tracks the current status of features, planned improvements, and t
 - [x] Implement Vim-like keyboard shortcuts (`cp`, `cd`, `p`, `d`, `s`, `t`, `[]`, `{}`, `j`, `k`, `/`, `gp`, `gs`, `gm`, `esc`, `<CR>`, `<C-Enter>`, `<S-Enter>`).
 - [x] Add visual mode indicators (`-- NORMAL --`, `-- INSERT --`, `-- PENDING --`) in bottom status bar.
 - [x] Add visual focus states for keyboard navigation.
+- [ ] Allow arrow keys to also work as an alternative to the "hjkl" keys for focus navigation.
+- [ ] Provide shortcut key for "Back" navigation.
 - [ ] **GUI Keymap Editor:** Settings modal/view to customize and persist user keybindings.
 - [ ] **Dynamic Bottom Bar:** Context-aware key hints depending on focused input, with global action overlay.
 - [ ] **Keymap Cheatsheet Modal:** Triggered by `?` showing all available motions.
